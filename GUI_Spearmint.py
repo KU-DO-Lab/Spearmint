@@ -128,7 +128,6 @@ for path_name, path_value in FILE_PATHS.items():
             output_header.setSectionResizeMode(4, QHeaderView.Fixed)
             output_header.resizeSection(4, 40)
 
-        # I believe this is where the action happens -Grant
         def make_connections(self):
             self.ui.editParameterButton.clicked.connect(self.edit_parameters)
             self.ui.startButton.clicked.connect(self.start_sweep)
