@@ -430,10 +430,10 @@ for path_name, path_value in FILE_PATHS.items():
                 self.ui.scanParameterBox.addItem(p.label, p)
 
                 # It is necessary to fill each settings menu with available parameters. This is as simple as it gets.
-                settings_to_update = [sweep_settings, sweep_settings_inner, sweep_settings_outer]
+                settings_to_update = [self.sweep_settings, self.sweep_settings_inner, self.sweep_settings_outer]
                 for menu in settings_to_update:
                     if p not in list(menu):
-                        self.sweep_settings[p] = {'start': '', 'end': '', 'step': '', 'step_sec': '', 'continual': False,
+                        menu[p] = {'start': '', 'end': '', 'step': '', 'step_sec': '', 'continual': False,
                                                   'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
                                                   'ramp_to_start': True}
 
