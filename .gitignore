@@ -6,6 +6,7 @@ Origin Files/
 cfg/
 logs/
 utils/
+resources/ui/__pycache__/
 .DS_Store
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
