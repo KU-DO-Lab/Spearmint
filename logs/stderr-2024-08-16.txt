@@ -1,3 +1,0 @@
-Started program at  22:33:30
-Command history can't be saved outside of IPython/Jupyter
-Program exited at 22:33:33
