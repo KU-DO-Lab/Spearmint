@@ -429,10 +429,14 @@ for path_name, path_value in FILE_PATHS.items():
                 self.ui.outputParamTable.setCellWidget(n, 4, getButton)
 
                 self.ui.scanParameterBox.addItem(p.label, p)
-                if p not in list(self.sweep_settings.keys()):
-                    self.sweep_settings[p] = {'start': '', 'end': '', 'step': '', 'step_sec': '', 'continual': False,
-                                              'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
-                                              'ramp_to_start': True}
+
+                # It is necessary to fill each settings menu with available parameters. This is as simple as it gets.
+                settings_to_update = [sweep_settings, sweep_settings_inner, sweep_settings_outer]
+                for menu in settings_to_update:
+                    if p not in list(menu):
+                        self.sweep_settings[p] = {'start': '', 'end': '', 'step': '', 'step_sec': '', 'continual': False,
+                                                  'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
+                                                  'ramp_to_start': True}
 
         def set_param(self, p, valueitem):
             try:
@@ -525,6 +529,24 @@ for path_name, path_value in FILE_PATHS.items():
                 sweep = None
 
             return sweep
+
+        def start_sweep2D(self):
+            ...
+
+        def pause_sweep2D(self):
+            ...
+
+        def pause_resume_sweep2D(self):
+            ...
+
+        def flip_sweep2D(self):
+            ...
+
+        def end_sweep2D(self):
+            ...
+
+        def add_sweep2D_to_queue(self): # this may require extending the queue object
+            ...
 
         def start_sweep(self):
             if self.sweep is not None:
