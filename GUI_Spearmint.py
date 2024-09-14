@@ -206,8 +206,8 @@ for path_name, path_value in FILE_PATHS.items():
 
                 # Update the two param boxes on 2D sweep page
                 case 1:
-                    old_set_param_inner = self.ui.scanParameterBoxInner.itemData(self.set_param_index)
-                    old_set_param_outer = self.ui.scanParameterBoxOuter.itemData(self.set_param_index)
+                    old_set_param_inner = self.ui.scanParameterInner.itemData(self.set_param_index)
+                    old_set_param_outer = self.ui.scanParameterOuter.itemData(self.set_param_index)
 
                     sweep_settings_inner = Sweep1DSettings()
                     sweep_settings_outer = Sweep1DSettings()
@@ -511,11 +511,13 @@ for path_name, path_value in FILE_PATHS.items():
                 # Corresponds to the 2D Sweep tab
                 case 1:
 
-                    # time is a placeholder, and should not be swept. Need to implement a check for that here
+                    if self.ui.scanParameterInner.currentText() == 'time' or self.ui.scanParameterOuter.currentText() == 'time':
+                        self.show_error("Error", "Can't sweep time for dual gate measurements. Select something else to sweep.")
+                        return
 
                     # [param, start, stop, step] 
-                    in_params = [_value_parser(self.ui.scanParameterBoxInner.currentData(), self.ui.startInner.text()), _value_parser(self.ui.endInner.text()), _value_parser(self.ui.stepInner.text())]
-                    out_params = [_value_parser(self.ui.scanParameterBoxOuter.currentData(), self.ui.startOuter.text()), _value_parser(self.ui.endOuter.text()), _value_parser(self.ui.stepOuter.text())]
+                    in_params = [_value_parser(self.ui.scanParameterInner.currentData()), _value_parser(self.ui.startInner.text()), _value_parser(self.ui.endInner.text()), _value_parser(self.ui.stepInner.text())]
+                    out_params = [_value_parser(self.ui.scanParameterOuter.currentData()), _value_parser(self.ui.startOuter.text()), _value_parser(self.ui.endOuter.text()), _value_parser(self.ui.stepOuter.text())]
                     stepsec_inner = _value_parser(self.ui.stepsecInner.text())
                     stepsec_outer = _value_parser(self.ui.stepsecOuter.text())
                     save = self.ui.saveBox2D.isChecked()
@@ -582,9 +584,10 @@ for path_name, path_value in FILE_PATHS.items():
 
                     self.sweep.start(ramp_to_start=self.ui.rampToStartBox.isChecked())
 
-                # Corresponds to the 2D Sweeps tab
+                # Corresponds to the 2D Sweeps tab, WIP
                 case 1:
-                    if self.sweep is not None:
+                    # Need to implement checks on different parameters for both sweep params & setpoint safety validation
+                    if self.sweep2D is not None:
                         if self.sweep.is_running:
                             alert = QMessageBox()
                             new_sweep = alert.question(self, "Warning!",
@@ -592,24 +595,24 @@ for path_name, path_value in FILE_PATHS.items():
                                                        alert.Yes | alert.No)
 
                             if new_sweep == alert.Yes:
-                                self.sweep.stop()
-                                self.sweep.kill()
-                                self.sweep = None
+                                self.sweep2D.stop()
+                                self.sweep2D.kill()
+                                self.sweep2D = None
                             else:
                                 return
-                        elif self.sweep.set_param == self.ui.scanParameterBox.currentData() \
-                            and self.ui.rampToStartBox.isChecked() is False:
-                            alert = QMessageBox()
-                            new_sweep = alert.question(self, "Warning!",
-                                                       "You are about to start a new sweep of the parameter you just swept, "
-                                                       "without ramping from the current setpoint to the start value. Are you "
-                                                       "sure you wish to do so?", alert.Yes | alert.No)
-
-                            if new_sweep == alert.Yes:
-                                self.sweep.kill()
-                                self.sweep = None
-                            else:
-                                return
+                        # elif self.sweep.set_param == self.ui.scanParameterBox.currentData() \
+                        #     and self.ui.rampToStartBox.isChecked() is False:
+                        #     alert = QMessageBox()
+                        #     new_sweep = alert.question(self, "Warning!",
+                        #                                "You are about to start a new sweep of the parameter you just swept, "
+                        #                                "without ramping from the current setpoint to the start value. Are you "
+                        #                                "sure you wish to do so?", alert.Yes | alert.No)
+                        #
+                        #     if new_sweep == alert.Yes:
+                        #         self.sweep.kill()
+                        #         self.sweep = None
+                        #     else:
+                        #         return
                         else:
                             self.sweep.kill()
 
@@ -623,7 +626,7 @@ for path_name, path_value in FILE_PATHS.items():
                             "suffix f/p/n/u/m/k/M/G.")
                         return
 
-                    save = self.ui.saveBox.isChecked()
+                    save = self.ui.saveBox2D.isChecked()
                     if save and self.db_set is False:
                         if not self.setup_save():
                             self.show_error('Error',
