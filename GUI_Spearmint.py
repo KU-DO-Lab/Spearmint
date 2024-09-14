@@ -160,83 +160,6 @@ for path_name, path_value in FILE_PATHS.items():
             # we should refactor this to one master function call later, calling updates for things not being rendered is stupid.
             self.update_param_combobox(tab=self.ui.tabWidget.currentIndex())
 
-        # def update_param_2Dcombobox(self, indexInner, indexOuter):
-        #
-        #     old_scan_parameter = self.ui.scanParameterInner.itemData(self.inner_scan_parameter_index)
-        #     # old_scan_parameter = self.ui.scanParameterOuter.itemData(self.outer_scan_parameter_index)
-        #
-        #     self.sweep_settings_2D[old_scan_parameter] = Sweep2DSettings()
-        #     self.sweep_settings_2D[old_scan_parameter].set(
-        #         in_params = SweepParam(parameter=self.ui.scanParameterInner.currentData(), start=self.ui.startInner.text(), stop=self.ui.endInner.text(), step=self.ui.stepInner.text()),
-        #         out_params = SweepParam(parameter=self.ui.scanParameterOuter.currentData(), start=self.ui.startOuter.text(), stop=self.ui.endOuter.text(), step=self.ui.stepOuter.text()),
-        #         inter_delay = self.ui.stepsecInner.text(),
-        #         outer_delay = self.ui.stepsecOuter.text(),
-        #     )
-        #
-        #
-        #     # self.sweep_settings_inner[old_scan_parameter_inner] = { 
-        #     #     'in_params': [self.ui.scanParameterInner.currentData(), self.ui.startInner.text(), self.ui.endInner.text(), self.ui.stepInner.text()], 
-        #     #     'inter_delay': self.ui.stepsecInner.text(), }
-        #     #
-        #     # self.sweep_settings_outer[old_scan_parameter_outer] = { 
-        #     #     'out_params': [self.ui.scanParameterOuter.currentData(), self.ui.startOuter.text(), self.ui.endOuter.text(), self.ui.stepOuter.text()], 
-        #     #     'outer_delay': self.ui.stepsecOuter.text(), }
-        #
-        #
-        #     if indexInner == 0: # when we are sweeping time, specifically
-        #         self.ui.startInner.setReadOnly(True)
-        #         p1 = self.ui.startInner.palette()
-        #         p1.setColor(self.ui.startInner.backgroundRole(), Qt.gray)
-        #         self.ui.startInner.setPalette(p1)
-        #
-        #         self.ui.stepInner.setReadOnly(True)
-        #         q1 = self.ui.stepInner.palette()
-        #         q1.setColor(self.ui.stepInner.backgroundRole(), Qt.gray)
-        #         self.ui.stepInner.setPalette(q1)
-        #
-        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterInner.currentData()])
-        #         self.inner_scan_parameter_index = indexInner
-        #     else:
-        #         self.ui.startInner.setReadOnly(false)
-        #         p1 = self.ui.startInner.palette()
-        #         p1.setColor(self.ui.startInner.backgroundRole(), Qt.white)
-        #         self.ui.startInner.setPalette(p1)
-        #
-        #         self.ui.stepInner.setReadOnly(false)
-        #         q1 = self.ui.stepInner.palette()
-        #         q1.setColor(self.ui.stepInner.backgroundRole(), Qt.white)
-        #         self.ui.stepInner.setPalette(q1)
-        #
-        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterInner.currentData()])
-        #         self.inner_scan_parameter_index = indexInner
-        #
-        #     if indexOuter == 0:
-        #         self.ui.startOuter.setReadOnly(True)
-        #         p2 = self.ui.startOuter.palette()
-        #         p2.setColor(self.ui.startOuter.backgroundRole(), Qt.gray)
-        #         self.ui.startOuter.setPalette(p2)
-        #
-        #         self.ui.stepOuter.setReadOnly(True)
-        #         q2 = self.ui.stepOuter.palette()
-        #         q2.setColor(self.ui.stepOuter.backgroundRole(), Qt.gray)
-        #         self.ui.stepOuter.setPalette(q2)
-        #
-        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterOuter.currentData()])
-        #         self.outer_scan_parameter_index = indexOuter
-        #     else:
-        #         self.ui.startOuter.setReadOnly(false)
-        #         p1 = self.ui.startOuter.palette()
-        #         p1.setColor(self.ui.startOuter.backgroundRole(), Qt.white)
-        #         self.ui.startOuter.setPalette(p2)
-        #
-        #         self.ui.stepOuter.setReadOnly(false)
-        #         q1 = self.ui.stepOuter.palette()
-        #         q1.setColor(self.ui.stepOuter.backgroundRole(), Qt.white)
-        #         self.ui.stepOuter.setPalette(q2)
-        #
-        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterOuter.currentData()])
-        #         self.inner_scan_parameter_index = indexOuter
-
         def update_param_combobox(self, tab):
             match tab:
                 case 0:
@@ -304,17 +227,17 @@ for path_name, path_value in FILE_PATHS.items():
 
                     for box in [self.ui.scanParameterInner, self.ui.scanParameterOuter]:
                         if box.currentIndex() == 0:
-                            elements_to_update = [self.ui.startInner, self.ui.startOuter, self.ui.stepInner, self.ui.startOuter]
+                            elements_to_update = [self.ui.startInner, self.ui.startOuter, self.ui.stepInner, self.ui.stepOuter]
                             for element in elements_to_update:
+                                p = element.palette()
                                 element.setReadOnly(True)
-                                p = element.palette 
                                 p.setColor(element, Qt.gray)
                                 element.setPalette(p)
                         else:
                             elements_to_update = [self.ui.startInner, self.ui.startOuter, self.ui.stepInner, self.ui.startOuter]
                             for element in elements_to_update:
+                                p = element.palette ()
                                 element.setReadOnly(False)
-                                p = element.palette 
                                 p.setColor(element, Qt.white)
                                 element.setPalette(p)
 
