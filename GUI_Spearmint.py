@@ -19,6 +19,7 @@ from utils.util import _value_parser, _name_parser, save_to_csv, safe_set, safe_
 from utils.base_sweep import BaseSweep
 from utils.sweep0d import Sweep0D
 from utils.sweep1d import Sweep1D
+from utils.sweep2d import Sweep2D
 from utils.sweep_queue import SweepQueue, DatabaseEntry
 from utils.abstract_settings import *
 import qcodes as qc
@@ -55,16 +56,12 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.scanParameterOuter.addItem('time', 'time')
 
 
+            # It's okay to add an entry to the sweep settings like this, probably
             self.sweep_settings = {'time': {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
                                             'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
                                             'ramp_to_start': True}}
-
-            # This implementation is missing a few parameters that could be passed, needs improvement
-            # For 2D sweeps we need to independently control outer and inner sweep settings as well as unifed settings between them.
-            self.sweep_settings_inner = { 'time': { 'in_params': [], 'inter_delay': ''}}
-            self.sweep_settings_outer = { 'time': { 'out_params': [], 'outer_delay': ''}}
-            # general 2D sweep settings unimplemented.
-            self.sweep_settings_2D =  {}
+            sweep_settings_inner = {}
+            sweep_settings_outer = {}
 
             self.set_param_index = 0
             self.inner_scan_parameter_index = 0
@@ -75,6 +72,7 @@ for path_name, path_value in FILE_PATHS.items():
 
             self.station = None
             self.sweep = None
+            self.sweep2D = None
             self.sweep_queue = SweepQueue(inter_delay=3)
 
             self.devices = {}
@@ -132,6 +130,7 @@ for path_name, path_value in FILE_PATHS.items():
         def make_connections(self):
             self.ui.editParameterButton.clicked.connect(self.edit_parameters)
             self.ui.startButton.clicked.connect(self.start_sweep)
+            self.ui.startButton2D.clicked.connect(self.start_sweep)
             self.ui.pauseButton.clicked.connect(self.pause_resume_sweep)
             self.ui.flipDirectionButton.clicked.connect(self.flip_direction)
             self.ui.endButton.clicked.connect(self.end_sweep)
@@ -159,119 +158,171 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.scanParameterBox.currentIndexChanged.connect(self.update_param_combobox)
 
             # we should refactor this to one master function call later, calling updates for things not being rendered is stupid.
-            self.update_param_combobox(index=0)
-            self.update_param_2Dcombobox(indexInner=0, indexOuter=0)
+            self.update_param_combobox(tab=self.ui.tabWidget.currentIndex())
 
-        def update_param_2Dcombobox(self, indexInner, indexOuter):
-            old_scan_parameter_inner = self.ui.scanParameterInner.itemData(self.inner_scan_parameter_index)
-            old_scan_parameter_outer = self.ui.scanParameterOuter.itemData(self.outer_scan_parameter_index)
-            self.sweep_settings_inner[old_scan_parameter_inner] = { 
-                'in_params': [self.ui.scanParameterInner.currentData(), self.ui.startInner.text(), self.ui.endInner.text(), self.ui.stepInner.text()], 
-                'inter_delay': self.ui.stepsecInner.text(), }
-                # 'save_data': self.ui.saveBox2D.isChecked(), 
-                # 'plot_data': self.ui.livePlotBox2D.isChecked(), 
-                # 'plot_bin': self.ui.plotbinEdit2D.text()}
+        # def update_param_2Dcombobox(self, indexInner, indexOuter):
+        #
+        #     old_scan_parameter = self.ui.scanParameterInner.itemData(self.inner_scan_parameter_index)
+        #     # old_scan_parameter = self.ui.scanParameterOuter.itemData(self.outer_scan_parameter_index)
+        #
+        #     self.sweep_settings_2D[old_scan_parameter] = Sweep2DSettings()
+        #     self.sweep_settings_2D[old_scan_parameter].set(
+        #         in_params = SweepParam(parameter=self.ui.scanParameterInner.currentData(), start=self.ui.startInner.text(), stop=self.ui.endInner.text(), step=self.ui.stepInner.text()),
+        #         out_params = SweepParam(parameter=self.ui.scanParameterOuter.currentData(), start=self.ui.startOuter.text(), stop=self.ui.endOuter.text(), step=self.ui.stepOuter.text()),
+        #         inter_delay = self.ui.stepsecInner.text(),
+        #         outer_delay = self.ui.stepsecOuter.text(),
+        #     )
+        #
+        #
+        #     # self.sweep_settings_inner[old_scan_parameter_inner] = { 
+        #     #     'in_params': [self.ui.scanParameterInner.currentData(), self.ui.startInner.text(), self.ui.endInner.text(), self.ui.stepInner.text()], 
+        #     #     'inter_delay': self.ui.stepsecInner.text(), }
+        #     #
+        #     # self.sweep_settings_outer[old_scan_parameter_outer] = { 
+        #     #     'out_params': [self.ui.scanParameterOuter.currentData(), self.ui.startOuter.text(), self.ui.endOuter.text(), self.ui.stepOuter.text()], 
+        #     #     'outer_delay': self.ui.stepsecOuter.text(), }
+        #
+        #
+        #     if indexInner == 0: # when we are sweeping time, specifically
+        #         self.ui.startInner.setReadOnly(True)
+        #         p1 = self.ui.startInner.palette()
+        #         p1.setColor(self.ui.startInner.backgroundRole(), Qt.gray)
+        #         self.ui.startInner.setPalette(p1)
+        #
+        #         self.ui.stepInner.setReadOnly(True)
+        #         q1 = self.ui.stepInner.palette()
+        #         q1.setColor(self.ui.stepInner.backgroundRole(), Qt.gray)
+        #         self.ui.stepInner.setPalette(q1)
+        #
+        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterInner.currentData()])
+        #         self.inner_scan_parameter_index = indexInner
+        #     else:
+        #         self.ui.startInner.setReadOnly(false)
+        #         p1 = self.ui.startInner.palette()
+        #         p1.setColor(self.ui.startInner.backgroundRole(), Qt.white)
+        #         self.ui.startInner.setPalette(p1)
+        #
+        #         self.ui.stepInner.setReadOnly(false)
+        #         q1 = self.ui.stepInner.palette()
+        #         q1.setColor(self.ui.stepInner.backgroundRole(), Qt.white)
+        #         self.ui.stepInner.setPalette(q1)
+        #
+        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterInner.currentData()])
+        #         self.inner_scan_parameter_index = indexInner
+        #
+        #     if indexOuter == 0:
+        #         self.ui.startOuter.setReadOnly(True)
+        #         p2 = self.ui.startOuter.palette()
+        #         p2.setColor(self.ui.startOuter.backgroundRole(), Qt.gray)
+        #         self.ui.startOuter.setPalette(p2)
+        #
+        #         self.ui.stepOuter.setReadOnly(True)
+        #         q2 = self.ui.stepOuter.palette()
+        #         q2.setColor(self.ui.stepOuter.backgroundRole(), Qt.gray)
+        #         self.ui.stepOuter.setPalette(q2)
+        #
+        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterOuter.currentData()])
+        #         self.outer_scan_parameter_index = indexOuter
+        #     else:
+        #         self.ui.startOuter.setReadOnly(false)
+        #         p1 = self.ui.startOuter.palette()
+        #         p1.setColor(self.ui.startOuter.backgroundRole(), Qt.white)
+        #         self.ui.startOuter.setPalette(p2)
+        #
+        #         self.ui.stepOuter.setReadOnly(false)
+        #         q1 = self.ui.stepOuter.palette()
+        #         q1.setColor(self.ui.stepOuter.backgroundRole(), Qt.white)
+        #         self.ui.stepOuter.setPalette(q2)
+        #
+        #         self.update_sweep_box_2D(self.sweep_settings_2D[self.ui.scanParameterOuter.currentData()])
+        #         self.inner_scan_parameter_index = indexOuter
 
-            self.sweep_settings_outer[old_scan_parameter_outer] = { 
-                'out_params': [self.ui.scanParameterOuter.currentData(), self.ui.startOuter.text(), self.ui.endOuter.text(), self.ui.stepOuter.text()], 
-                'outer_delay': self.ui.stepsecOuter.text(), }
+        def update_param_combobox(self, tab):
+            match tab:
+                case 0:
+                    old_set_param = self.ui.scanParameterBox.itemData(self.set_param_index)
 
+                    # Updated to a class implementation based settings method to more rigidly define things
+                    sweep_1d = Sweep1DSettings()
+                    sweep_1d.set(
+                        params=SweepParam(parameter='', start = self.ui.startEdit.text(), stop = self.ui.endEdit.text(), step = self.ui.stepEdit.text()),
+                        step_sec = self.ui.stepsecEdit.text(),
+                        save_data = self.ui.saveBox.isChecked(),
+                        plot_data = self.ui.livePlotBox.isChecked(),
+                        plot_bin = self.ui.plotbinEdit.text(),
+                        bidirectional = self.ui.bidirectionalBox.isChecked(),
+                        continual = self.ui.continualBox.isChecked()
+                    )
+                    
+                    self.sweep_settings[old_set_param] = sweep_1d.get()
+                    index = self.ui.scanParameterBox.currentIndex()
+                    
+                    # If the index is set to zero then we are not sweeping anything. 
+                    # Gray out and lock the boxes until we have selected a valid sweep parameter.
+                    if index == 0:
+                        self.ui.startEdit.setReadOnly(True)
+                        p = self.ui.startEdit.palette()
+                        p.setColor(self.ui.startEdit.backgroundRole(), Qt.gray)
+                        self.ui.startEdit.setPalette(p)
+                        self.ui.stepEdit.setReadOnly(True)
+                        q = self.ui.stepEdit.palette()
+                        q.setColor(self.ui.stepEdit.backgroundRole(), Qt.gray)
+                        self.ui.stepEdit.setPalette(q)
+                    else:
+                        self.ui.startEdit.setReadOnly(False)
+                        p = self.ui.startEdit.palette()
+                        p.setColor(self.ui.startEdit.backgroundRole(), Qt.white)
+                        self.ui.startEdit.setPalette(p)
+                        self.ui.stepEdit.setReadOnly(False)
+                        q = self.ui.stepEdit.palette()
+                        q.setColor(self.ui.stepEdit.backgroundRole(), Qt.white)
+                        self.ui.stepEdit.setPalette(q)
 
-            if indexInner == 0:
-                self.ui.startInner.setReadOnly(True)
-                p1 = self.ui.startInner.palette()
-                p1.setColor(self.ui.startInner.backgroundRole(), Qt.gray)
-                self.ui.startInner.setPalette(p1)
+                        self.update_sweep_box(self.sweep_settings[self.ui.scanParameterBox.currentData()])
+                        self.set_param_index = index
 
-                self.ui.stepInner.setReadOnly(True)
-                q1 = self.ui.stepInner.palette()
-                q1.setColor(self.ui.stepInner.backgroundRole(), Qt.gray)
-                self.ui.stepInner.setPalette(q1)
+                # Update the two param boxes on 2D sweep page
+                case 1:
+                    old_set_param_inner = self.ui.scanParameterBoxInner.itemData(self.set_param_index)
+                    old_set_param_outer = self.ui.scanParameterBoxOuter.itemData(self.set_param_index)
 
-                self.update_sweep_box_inner(self.sweep_settings_inner[self.ui.scanParameterInner.currentData()])
-                self.inner_scan_parameter_index = indexInner
-            else:
-                self.ui.startInner.setReadOnly(false)
-                p1 = self.ui.startInner.palette()
-                p1.setColor(self.ui.startInner.backgroundRole(), Qt.white)
-                self.ui.startInner.setPalette(p1)
+                    sweep_settings_inner = Sweep1DSettings()
+                    sweep_settings_outer = Sweep1DSettings()
 
-                self.ui.stepInner.setReadOnly(false)
-                q1 = self.ui.stepInner.palette()
-                q1.setColor(self.ui.stepInner.backgroundRole(), Qt.white)
-                self.ui.stepInner.setPalette(q1)
+                    sweep_settings_inner.set(
+                        params=SweepParam(parameter=self.ui.scanParameterInner.currentData(), start=self.ui.startInner.text(), stop=self.ui.endInner.text(), step=self.ui.stepInner.text()), 
+                        inter_delay = self.ui.stepsecInner.text()
+                    )
 
-                self.update_sweep_box_inner(self.sweep_settings_inner[self.ui.scanParameterInner.currentData()])
-                self.inner_scan_parameter_index = indexInner
+                    sweep_settings_outer.set(
+                        params=SweepParam(parameter=self.ui.scanParameterOuter.currentData(), start=self.ui.startOuter.text(), stop=self.ui.endOuter.text(), step=self.ui.stepOuter.text()), 
+                        inter_delay = self.ui.stepsecOuter.text()
+                    )
+                   
+                    self.sweep_settings_inner[old_set_param] = self.sweep_settings_inner.get()
+                    self.sweep_settings_inner[old_set_param] = self.sweep_settings_outer.get()
 
-            if indexOuter == 0:
-                self.ui.startOuter.setReadOnly(True)
-                p2 = self.ui.startOuter.palette()
-                p2.setColor(self.ui.startOuter.backgroundRole(), Qt.gray)
-                self.ui.startOuter.setPalette(p2)
+                    for box in [self.ui.scanParameterInner, self.ui.scanParameterOuter]:
+                        if box.currentIndex() == 0:
+                            elements_to_update = [self.ui.startInner, self.ui.startOuter, self.ui.stepInner, self.ui.startOuter]
+                            for element in elements_to_update:
+                                element.setReadOnly(True)
+                                p = element.palette 
+                                p.setColor(element, Qt.gray)
+                                element.setPalette(p)
+                        else:
+                            elements_to_update = [self.ui.startInner, self.ui.startOuter, self.ui.stepInner, self.ui.startOuter]
+                            for element in elements_to_update:
+                                element.setReadOnly(False)
+                                p = element.palette 
+                                p.setColor(element, Qt.white)
+                                element.setPalette(p)
 
-                self.ui.stepOuter.setReadOnly(True)
-                q2 = self.ui.stepOuter.palette()
-                q2.setColor(self.ui.stepOuter.backgroundRole(), Qt.gray)
-                self.ui.stepOuter.setPalette(q2)
-
-                self.update_sweep_box_outer(self.sweep_settings_outer[self.ui.scanParameterOuter.currentData()])
-                self.outer_scan_parameter_index = indexOuter
-            else:
-                self.ui.startOuter.setReadOnly(false)
-                p1 = self.ui.startOuter.palette()
-                p1.setColor(self.ui.startOuter.backgroundRole(), Qt.white)
-                self.ui.startOuter.setPalette(p2)
-
-                self.ui.stepOuter.setReadOnly(false)
-                q1 = self.ui.stepOuter.palette()
-                q1.setColor(self.ui.stepOuter.backgroundRole(), Qt.white)
-                self.ui.stepOuter.setPalette(q2)
-
-                self.update_sweep_box_outer(self.sweep_settings_outer[self.ui.scanParameterOuter.currentData()])
-                self.inner_scan_parameter_index = indexOuter
-
-
-        def update_param_combobox(self, index):
-            old_set_param = self.ui.scanParameterBox.itemData(self.set_param_index)
-
-            # Updated to a class implementation based settings method to more rigidly define things
-            sweep_1d = Sweep1DSettings()
-            sweep_1d.set(
-                params=SweepParam(parameter='', start = self.ui.startEdit.text(), stop = self.ui.endEdit.text(), step = self.ui.stepEdit.text()),
-                step_sec = self.ui.stepsecEdit.text(),
-                save_data = self.ui.saveBox.isChecked(),
-                plot_data = self.ui.livePlotBox.isChecked(),
-                plot_bin = self.ui.plotbinEdit.text(),
-                bidirectional = self.ui.bidirectionalBox.isChecked(),
-                continual = self.ui.continualBox.isChecked()
-            )
-            
-            self.sweep_settings[old_set_param] = sweep_1d.get()
-            
-            # If the index is set to zero then we are not sweeping anything. 
-            # Gray out and lock the boxes until we have selected a valid sweep parameter.
-            if index == 0:
-                self.ui.startEdit.setReadOnly(True)
-                p = self.ui.startEdit.palette()
-                p.setColor(self.ui.startEdit.backgroundRole(), Qt.gray)
-                self.ui.startEdit.setPalette(p)
-                self.ui.stepEdit.setReadOnly(True)
-                q = self.ui.stepEdit.palette()
-                q.setColor(self.ui.stepEdit.backgroundRole(), Qt.gray)
-                self.ui.stepEdit.setPalette(q)
-            else:
-                self.ui.startEdit.setReadOnly(False)
-                p = self.ui.startEdit.palette()
-                p.setColor(self.ui.startEdit.backgroundRole(), Qt.white)
-                self.ui.startEdit.setPalette(p)
-                self.ui.stepEdit.setReadOnly(False)
-                q = self.ui.stepEdit.palette()
-                q.setColor(self.ui.stepEdit.backgroundRole(), Qt.white)
-                self.ui.stepEdit.setPalette(q)
-
-                self.update_sweep_box(self.sweep_settings[self.ui.scanParameterBox.currentData()])
-                self.set_param_index = index
+                            self.update_sweep_box_2D_page(self.sweep_settings_inner[self.ui.scanParameterInner.currentData()], self.sweep_settings_outer[self.ui.scanParameterOuter.currentData()])
+                            if box == self.ui.scanParameterInner:
+                                self.inner_scan_parameter_index = box.currentIndex()
+                            else:
+                                self.outer_scan_parameter_index = 0
 
         def start_logs(self):
             self.stdout_filename = os.path.join(FILE_PATHS["log_base_dir"], f'stdout-{current_date}.txt')
@@ -437,10 +488,6 @@ for path_name, path_value in FILE_PATHS.items():
                     sweep_settings[p] = {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
                                               'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
                                               'ramp_to_start': True}
-                elif p not in list(self.sweep_settings_inner.keys()):
-                    sweep_settings_inner[p] = {}
-                elif p not in list(self.sweep_settings_outer.keys()):
-                    sweep_settings_inner[p] = {}
 
         def set_param(self, p, valueitem):
             try:
@@ -481,125 +528,188 @@ for path_name, path_value in FILE_PATHS.items():
                 self.ui.scanParameterBox.setItemText(n + 1, param.label)
 
         def create_sweep(self):
-            # Check if we're scanning time, then if so, do Sweep0D
-            if self.ui.scanParameterBox.currentText() == 'time':
-                stop = _value_parser(self.ui.endEdit.text())
-                stepsec = _value_parser(self.ui.stepsecEdit.text())
-                plotbin = self.ui.plotbinEdit.text()
-                plotbin = int(plotbin)
-                if plotbin < 1:
-                    self.ui.plotbinEdit.setText('1')
-                    raise ValueError
+            match self.ui.tabWidget.currentIndex():
+                # Corresponds to the 1D sweep tab
+                case 0:
+                    # Check if we're scanning time, then if so, do Sweep0D
+                    if self.ui.scanParameterBox.currentText() == 'time':
+                        stop = _value_parser(self.ui.endEdit.text())
+                        stepsec = _value_parser(self.ui.stepsecEdit.text())
+                        plotbin = self.ui.plotbinEdit.text()
+                        plotbin = int(plotbin)
+                        if plotbin < 1:
+                            self.ui.plotbinEdit.setText('1')
+                            raise ValueError
 
-                save = self.ui.saveBox.isChecked()
-                plot = self.ui.livePlotBox.isChecked()
+                        save = self.ui.saveBox.isChecked()
+                        plot = self.ui.livePlotBox.isChecked()
 
-                sweep = Sweep0D(max_time=stop, inter_delay=1 / stepsec, save_data=save,
-                                plot_data=plot, plot_bin=plotbin)
-            # Set up Sweep1D if we're not sweeping time
-            else:
-                start = _value_parser(self.ui.startEdit.text())
-                stop = _value_parser(self.ui.endEdit.text())
-                step = _value_parser(self.ui.stepEdit.text())
-                stepsec = _value_parser(self.ui.stepsecEdit.text())
-                plotbin = self.ui.plotbinEdit.text()
-                plotbin = int(plotbin)
-                if plotbin < 1:
-                    self.ui.plotbinEdit.setText('1')
-                    raise ValueError
+                        sweep = Sweep0D(max_time=stop, inter_delay=1 / stepsec, save_data=save,
+                                        plot_data=plot, plot_bin=plotbin)
 
-                set_param = self.ui.scanParameterBox.currentData()
-                twoway = self.ui.bidirectionalBox.isChecked()
-                continuous = self.ui.continualBox.isChecked()
-                save = self.ui.saveBox.isChecked()
-                plot = self.ui.livePlotBox.isChecked()
+                    # Set up Sweep1D if we're not sweeping time
+                    else:
+                        start = _value_parser(self.ui.startEdit.text())
+                        stop = _value_parser(self.ui.endEdit.text())
+                        step = _value_parser(self.ui.stepEdit.text())
+                        stepsec = _value_parser(self.ui.stepsecEdit.text())
+                        plotbin = self.ui.plotbinEdit.text()
+                        plotbin = int(plotbin)
+                        if plotbin < 1:
+                            self.ui.plotbinEdit.setText('1')
+                            raise ValueError
 
-                sweep = Sweep1D(set_param, start, stop, step, inter_delay=1.0 / stepsec,
-                                bidirectional=twoway, continual=continuous, save_data=save,
-                                plot_data=plot, x_axis_time=0, plot_bin=plotbin)
+                        set_param = self.ui.scanParameterBox.currentData()
+                        twoway = self.ui.bidirectionalBox.isChecked()
+                        continuous = self.ui.continualBox.isChecked()
+                        save = self.ui.saveBox.isChecked()
+                        plot = self.ui.livePlotBox.isChecked()
 
-            for n in range(self.ui.followParamTable.rowCount()):
-                if self.ui.followParamTable.cellWidget(n, 3).isChecked():
-                    param = self.ui.followParamTable.item(n, 0).data(32)
-                    if param is not sweep.set_param:
-                        sweep.follow_param(param)
+                        sweep = Sweep1D(set_param, start, stop, step, inter_delay=1.0 / stepsec,
+                                        bidirectional=twoway, continual=continuous, save_data=save,
+                                        plot_data=plot, x_axis_time=0, plot_bin=plotbin)
 
-            sweep.update_signal.connect(self.receive_updates)
-            sweep.dataset_signal.connect(self.receive_dataset)
+                    for n in range(self.ui.followParamTable.rowCount()):
+                        if self.ui.followParamTable.cellWidget(n, 3).isChecked():
+                            param = self.ui.followParamTable.item(n, 0).data(32)
+                            if param is not sweep.set_param:
+                                sweep.follow_param(param)
 
-            if isinstance(sweep, Sweep0D) and len(sweep._params) == 0 and sweep.plot_data:
-                self.show_error("Error", "Can't plot time against nothing. Either select some parameters to follow or "
-                    "unselect \'plot data\'.")
-                sweep = None
+                    sweep.update_signal.connect(self.receive_updates)
+                    sweep.dataset_signal.connect(self.receive_dataset)
 
-            return sweep
+                    if isinstance(sweep, Sweep0D) and len(sweep._params) == 0 and sweep.plot_data:
+                        self.show_error("Error", "Can't plot time against nothing. Either select some parameters to follow or "
+                            "unselect \'plot data\'.")
+                        sweep = None
 
-        def start_sweep2D(self):
-            ...
+                    return sweep 
 
-        def pause_sweep2D(self):
-            ...
+                # Corresponds to the 2D Sweep tab
+                case 1:
 
-        def pause_resume_sweep2D(self):
-            ...
+                    # time is a placeholder, and should not be swept. Need to implement a check for that here
 
-        def flip_sweep2D(self):
-            ...
+                    # [param, start, stop, step] 
+                    in_params = [_value_parser(self.ui.scanParameterBoxInner.currentData(), self.ui.startInner.text()), _value_parser(self.ui.endInner.text()), _value_parser(self.ui.stepInner.text())]
+                    out_params = [_value_parser(self.ui.scanParameterBoxOuter.currentData(), self.ui.startOuter.text()), _value_parser(self.ui.endOuter.text()), _value_parser(self.ui.stepOuter.text())]
+                    stepsec_inner = _value_parser(self.ui.stepsecInner.text())
+                    stepsec_outer = _value_parser(self.ui.stepsecOuter.text())
+                    save = self.ui.saveBox2D.isChecked()
+                    plot = self.ui.livePlotBox2D.isChecked()
+                    plotbin = int(self.ui.plotbinEdit2D.text())
+                    if plotbin < 1:
+                        self.ui.plotbinEdit.setText('1')
+                        raise ValueError
 
-        def end_sweep2D(self):
-            ...
-
-        def add_sweep2D_to_queue(self): # this may require extending the queue object
-            ...
+                    sweep = Sweep2D(in_params=in_params, out_params=out_params, 
+                                    inter_delay=1.0/stepsec_inner, outer_delay=1.0/stepsec_outer, 
+                                    save_data=save, plot_data=plot)
+                    return sweep
 
         def start_sweep(self):
-            if self.sweep is not None:
-                if self.sweep.is_running:
-                    alert = QMessageBox()
-                    new_sweep = alert.question(self, "Warning!",
-                                               "A sweep is already running! Stop the current sweep and start a new one?",
-                                               alert.Yes | alert.No)
+            match self.ui.tabWidget.currentIndex():
+                # Corresponds to the 1D Sweep tab
+                case 0:
+                    if self.sweep is not None:
+                        if self.sweep.is_running:
+                            alert = QMessageBox()
+                            new_sweep = alert.question(self, "Warning!",
+                                                       "A sweep is already running! Stop the current sweep and start a new one?",
+                                                       alert.Yes | alert.No)
 
-                    if new_sweep == alert.Yes:
-                        self.sweep.stop()
-                        self.sweep.kill()
-                        self.sweep = None
-                    else:
+                            if new_sweep == alert.Yes:
+                                self.sweep.stop()
+                                self.sweep.kill()
+                                self.sweep = None
+                            else:
+                                return
+                        elif self.sweep.set_param == self.ui.scanParameterBox.currentData() \
+                            and self.ui.rampToStartBox.isChecked() is False:
+                            alert = QMessageBox()
+                            new_sweep = alert.question(self, "Warning!",
+                                                       "You are about to start a new sweep of the parameter you just swept, "
+                                                       "without ramping from the current setpoint to the start value. Are you "
+                                                       "sure you wish to do so?", alert.Yes | alert.No)
+
+                            if new_sweep == alert.Yes:
+                                self.sweep.kill()
+                                self.sweep = None
+                            else:
+                                return
+                        else:
+                            self.sweep.kill()
+
+                    try:
+                        self.sweep = self.create_sweep()
+                        if self.sweep is None:
+                            return
+                    except ValueError:
+                        self.show_error("Error", "One or more of the sweep input values are invalid. "
+                            "Valid inputs consist of a number optionally followed by "
+                            "suffix f/p/n/u/m/k/M/G.")
                         return
-                elif self.sweep.set_param == self.ui.scanParameterBox.currentData() \
-                    and self.ui.rampToStartBox.isChecked() is False:
-                    alert = QMessageBox()
-                    new_sweep = alert.question(self, "Warning!",
-                                               "You are about to start a new sweep of the parameter you just swept, "
-                                               "without ramping from the current setpoint to the start value. Are you "
-                                               "sure you wish to do so?", alert.Yes | alert.No)
 
-                    if new_sweep == alert.Yes:
-                        self.sweep.kill()
-                        self.sweep = None
-                    else:
+                    save = self.ui.saveBox.isChecked()
+                    if save and self.db_set is False:
+                        if not self.setup_save():
+                            self.show_error('Error',
+                                            "Database was not opened. Set save information before running the sweep again.")
+                            return
+
+                    self.sweep.start(ramp_to_start=self.ui.rampToStartBox.isChecked())
+
+                # Corresponds to the 2D Sweeps tab
+                case 1:
+                    if self.sweep is not None:
+                        if self.sweep.is_running:
+                            alert = QMessageBox()
+                            new_sweep = alert.question(self, "Warning!",
+                                                       "A sweep is already running! Stop the current sweep and start a new one?",
+                                                       alert.Yes | alert.No)
+
+                            if new_sweep == alert.Yes:
+                                self.sweep.stop()
+                                self.sweep.kill()
+                                self.sweep = None
+                            else:
+                                return
+                        elif self.sweep.set_param == self.ui.scanParameterBox.currentData() \
+                            and self.ui.rampToStartBox.isChecked() is False:
+                            alert = QMessageBox()
+                            new_sweep = alert.question(self, "Warning!",
+                                                       "You are about to start a new sweep of the parameter you just swept, "
+                                                       "without ramping from the current setpoint to the start value. Are you "
+                                                       "sure you wish to do so?", alert.Yes | alert.No)
+
+                            if new_sweep == alert.Yes:
+                                self.sweep.kill()
+                                self.sweep = None
+                            else:
+                                return
+                        else:
+                            self.sweep.kill()
+
+                    try:
+                        self.sweep = self.create_sweep()
+                        if self.sweep is None:
+                            return
+                    except ValueError:
+                        self.show_error("Error", "One or more of the sweep input values are invalid. "
+                            "Valid inputs consist of a number optionally followed by "
+                            "suffix f/p/n/u/m/k/M/G.")
                         return
-                else:
-                    self.sweep.kill()
 
-            try:
-                self.sweep = self.create_sweep()
-                if self.sweep is None:
-                    return
-            except ValueError:
-                self.show_error("Error", "One or more of the sweep input values are invalid. "
-                    "Valid inputs consist of a number optionally followed by "
-                    "suffix f/p/n/u/m/k/M/G.")
-                return
+                    save = self.ui.saveBox.isChecked()
+                    if save and self.db_set is False:
+                        if not self.setup_save():
+                            self.show_error('Error',
+                                            "Database was not opened. Set save information before running the sweep again.")
+                            return
 
-            save = self.ui.saveBox.isChecked()
-            if save and self.db_set is False:
-                if not self.setup_save():
-                    self.show_error('Error',
-                                    "Database was not opened. Set save information before running the sweep again.")
-                    return
+                    self.sweep.start(ramp_to_start=self.ui.rampToStartBox.isChecked())
 
-            self.sweep.start(ramp_to_start=self.ui.rampToStartBox.isChecked())
+
 
         def pause_resume_sweep(self):
             if self.sweep is None:
@@ -627,15 +737,19 @@ for path_name, path_value in FILE_PATHS.items():
             self.sweep = None
 
         def add_sweep_to_queue(self):
-            try:
-                sweep = self.create_sweep()
-                if sweep is None:
+            match self.ui.tabWidget.currentIndex():
+                case 0:
+                    try:
+                        sweep = self.create_sweep()
+                        if sweep is None:
+                            return
+                    except ValueError as e:
+                        self.show_error("Error", "One or more of the sweep input values are invalid. "
+                            "Valid inputs consist of a number optionally followed by "
+                            "suffix f/p/n/u/m/k/M/G.", e)
+                        return
+                case 1:
                     return
-            except ValueError as e:
-                self.show_error("Error", "One or more of the sweep input values are invalid. "
-                    "Valid inputs consist of a number optionally followed by "
-                    "suffix f/p/n/u/m/k/M/G.", e)
-                return
 
             self.sweep_queue.append(sweep)
             self.update_sequence_table()
@@ -769,6 +883,10 @@ for path_name, path_value in FILE_PATHS.items():
                 self.sweep.export_json(filename)
 
         def load_sweep(self):
+            '''Loads a 1D Sweep. In need of refactoring/replacing 
+
+            Runs when 'load sweep' is clicked. Pretty outdated since it only supports sweep 1D.
+            '''
             (filename, x) = QFileDialog.getOpenFileName(self, "Load Sweep from JSON",
                                                         FILE_PATHS["experiment_base_dir"],
                                                         "JSON (*.txt *.json)")
@@ -808,24 +926,18 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.bidirectionalBox.setChecked(settings.bidirectional)
             self.ui.continualBox.setChecked(settings.continual)
 
-        def update_sweep_box_inner(self, settings):
+        def update_sweep_box_2D_page(self, settings_inner, settings_outer):
             '''
-            Convenience function for setting "Inner Sweep" parameters
+            Convenience function for setting "2D sweep" parameters
             '''
-            self.ui.startInner.setText(str(settings['in_params'][1]))
-            self.ui.endInner.setText(str(settings['in_params'][2]))
-            self.ui.stepInner.setText(str(settings['in_params'][3]))
-            self.ui.stepsecInner.setText(str(settings['inter_delay']))
-
-        
-        def update_sweep_box_outer(self, settings):
-            '''
-            Convenience function for setting "Outer Sweep" parameters
-            '''
-            self.ui.startOuter.setText(str(settings['out_params'][1]))
-            self.ui.endOuter.setText(str(settings['out_params'][2]))
-            self.ui.stepOuter.setText(str(settings['out_params'][3]))
-            self.ui.stepsecOuter.setText(str(settings['outer_delay']))
+            self.ui.startInner.setText(str(settings_inner.params.start))
+            self.ui.endInner.setText(str(settings_inner.params.stop))
+            self.ui.stepInner.setText(str(settings_inner.params.step))
+            self.ui.stepsecInner.setText(str(settings_inner.step_sec))
+            self.ui.startOuter.setText(str(settings_outer.params.start))
+            self.ui.endOuter.setText(str(settings_outer.params.stop))
+            self.ui.stepOuter.setText(str(settings_outer.params.step))
+            self.ui.stepsecOuter.setText(str(settings_outer.step_sec))
 
         def save_sequence(self):
             (filename, x) = QFileDialog.getSaveFileName(self, "Save Sequence as JSON",
