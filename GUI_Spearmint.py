@@ -20,6 +20,7 @@ from utils.base_sweep import BaseSweep
 from utils.sweep0d import Sweep0D
 from utils.sweep1d import Sweep1D
 from utils.sweep_queue import SweepQueue, DatabaseEntry
+from utils.abstract_settings import *
 import qcodes as qc
 from qcodes import Station, Instrument, initialise_or_create_database_at
 from qcodes.dataset.experiment_container import experiments
@@ -54,7 +55,7 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.scanParameterOuter.addItem('time', 'time')
 
 
-            self.sweep_settings = {'time': {'start': '', 'end': '', 'step': '', 'step_sec': '', 'continual': False,
+            self.sweep_settings = {'time': {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
                                             'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
                                             'ramp_to_start': True}}
 
@@ -156,8 +157,6 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.sequenceWidget.itemDoubleClicked.connect(self.edit_sequence_item)
 
             self.ui.scanParameterBox.currentIndexChanged.connect(self.update_param_combobox)
-            # print(self.ui.tabWidget.currentIndex())
-            # self.update_param_combobox(0)
 
             # we should refactor this to one master function call later, calling updates for things not being rendered is stupid.
             self.update_param_combobox(index=0)
@@ -235,16 +234,21 @@ for path_name, path_value in FILE_PATHS.items():
 
         def update_param_combobox(self, index):
             old_set_param = self.ui.scanParameterBox.itemData(self.set_param_index)
-            self.sweep_settings[old_set_param] = {'start': self.ui.startEdit.text(), 'end': self.ui.endEdit.text(),
-                                                  'step': self.ui.stepEdit.text(),
-                                                  'step_sec': self.ui.stepsecEdit.text(),
-                                                  'save_data': self.ui.saveBox.isChecked(),
-                                                  'plot_data': self.ui.livePlotBox.isChecked(),
-                                                  'plot_bin': self.ui.plotbinEdit.text(),
-                                                  'bidirectional': self.ui.bidirectionalBox.isChecked(),
-                                                  'continual': self.ui.continualBox.isChecked()}
 
-
+            # Updated to a class implementation based settings method to more rigidly define things
+            sweep_1d = Sweep1DSettings()
+            sweep_1d.set(
+                params=SweepParam(parameter='', start = self.ui.startEdit.text(), stop = self.ui.endEdit.text(), step = self.ui.stepEdit.text()),
+                step_sec = self.ui.stepsecEdit.text(),
+                save_data = self.ui.saveBox.isChecked(),
+                plot_data = self.ui.livePlotBox.isChecked(),
+                plot_bin = self.ui.plotbinEdit.text(),
+                bidirectional = self.ui.bidirectionalBox.isChecked(),
+                continual = self.ui.continualBox.isChecked()
+            )
+            
+            self.sweep_settings[old_set_param] = sweep_1d.get()
+            
             # If the index is set to zero then we are not sweeping anything. 
             # Gray out and lock the boxes until we have selected a valid sweep parameter.
             if index == 0:
@@ -429,13 +433,14 @@ for path_name, path_value in FILE_PATHS.items():
 
                 self.ui.scanParameterBox.addItem(p.label, p)
 
-                # It is necessary to fill each settings menu with available parameters. This is as simple as it gets.
-                settings_to_update = [self.sweep_settings, self.sweep_settings_inner, self.sweep_settings_outer]
-                for menu in settings_to_update:
-                    if p not in list(menu):
-                        menu[p] = {'start': '', 'end': '', 'step': '', 'step_sec': '', 'continual': False,
-                                                  'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
-                                                  'ramp_to_start': True}
+                if p not in list(self.sweep_settings.keys()):
+                    sweep_settings[p] = {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
+                                              'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
+                                              'ramp_to_start': True}
+                elif p not in list(self.sweep_settings_inner.keys()):
+                    sweep_settings_inner[p] = {}
+                elif p not in list(self.sweep_settings_outer.keys()):
+                    sweep_settings_inner[p] = {}
 
         def set_param(self, p, valueitem):
             try:
@@ -491,7 +496,7 @@ for path_name, path_value in FILE_PATHS.items():
 
                 sweep = Sweep0D(max_time=stop, inter_delay=1 / stepsec, save_data=save,
                                 plot_data=plot, plot_bin=plotbin)
-                # Set up Sweep1D if we're not sweeping time
+            # Set up Sweep1D if we're not sweeping time
             else:
                 start = _value_parser(self.ui.startEdit.text())
                 stop = _value_parser(self.ui.endEdit.text())
@@ -773,10 +778,16 @@ for path_name, path_value in FILE_PATHS.items():
                     new_sweep = BaseSweep.init_from_json(filename, self.station)
                     self.sweep = new_sweep
 
-                    settings = {'start': self.sweep.begin, 'end': self.sweep.end, 'step': self.sweep.step,
-                                'step_sec': 1 / self.sweep.inter_delay, 'save_data': self.sweep.save_data,
-                                'plot_data': self.sweep.plot_data, 'plot_bin': self.sweep.plot_bin,
-                                'bidirectional': self.sweep.bidirectional, 'continual': self.sweep.continuous}
+                    settings = Sweep1DSettings()
+                    settings.set(
+                        params=SweepParam(start=self.sweep.begin, stop=self.sweep.end, step=self.sweep.step),
+                        step_sec = 1/self.sweep.inter_delay,
+                        save_data = self.sweep.save_data,
+                        plot_data = self.sweep.plot_data,
+                        plot_bin = self.sweep.plot_bin,
+                        bidirectional = self.sweep.bidirectional,
+                        continual = self.sweep.continuous
+                    )
 
                     self.update_sweep_box(settings)
 
@@ -787,15 +798,15 @@ for path_name, path_value in FILE_PATHS.items():
                     self.show_error('Error', "Could not load the sweep.", e)
 
         def update_sweep_box(self, settings):
-            self.ui.startEdit.setText(str(settings['start']))
-            self.ui.endEdit.setText(str(settings['end']))
-            self.ui.stepEdit.setText(str(settings['step']))
-            self.ui.stepsecEdit.setText(str(settings['step_sec']))
-            self.ui.saveBox.setChecked(settings['save_data'])
-            self.ui.livePlotBox.setChecked(settings['plot_data'])
-            self.ui.plotbinEdit.setText(str(settings['plot_bin']))
-            self.ui.bidirectionalBox.setChecked(settings['bidirectional'])
-            self.ui.continualBox.setChecked(settings['continual'])
+            self.ui.startEdit.setText(str(settings.params.start))
+            self.ui.endEdit.setText(str(settings.params.stop))
+            self.ui.stepEdit.setText(str(settings.params.step))
+            self.ui.stepsecEdit.setText(str(settings.step_sec))
+            self.ui.saveBox.setChecked(settings.save_data)
+            self.ui.livePlotBox.setChecked(settings.plot_data)
+            self.ui.plotbinEdit.setText(str(settings.plot_bin))
+            self.ui.bidirectionalBox.setChecked(settings.bidirectional)
+            self.ui.continualBox.setChecked(settings.continual)
 
         def update_sweep_box_inner(self, settings):
             '''

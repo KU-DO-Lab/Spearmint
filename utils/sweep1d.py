@@ -122,11 +122,11 @@ class Sweep1D(BaseSweep, QObject):
         BaseSweep.__init__(self, set_param=set_param, x_axis_time=x_axis_time, *args, **kwargs)
 
         self.begin = start
-        self.end = stop
+        self.stop = stop
         self.step = step
 
         # Make sure the step is in the right direction
-        if (self.end - self.begin) > 0:
+        if (self.stop - self.begin) > 0:
             self.step = abs(self.step)
         else:
             self.step = (-1) * abs(self.step)
@@ -143,10 +143,10 @@ class Sweep1D(BaseSweep, QObject):
         self.magnet_initialized = False
 
     def __str__(self):
-        return f"1D Sweep of {self.set_param.label} from {self.begin} to {self.end}, with step size {self.step}."
+        return f"1D Sweep of {self.set_param.label} from {self.begin} to {self.stop}, with step size {self.step}."
 
     def __repr__(self):
-        return f"Sweep1D({self.set_param.label}, {self.begin}, {self.end}, {self.step})"
+        return f"Sweep1D({self.set_param.label}, {self.begin}, {self.stop}, {self.step})"
 
     def start(self, persist_data=None, ramp_to_start=True, ramp_multiplier=1):
         """
@@ -174,7 +174,7 @@ class Sweep1D(BaseSweep, QObject):
             self.print_main.emit(f"Ramping to our starting setpoint value of {self.begin} ({self.set_param.unit})")
             self.ramp_to(self.begin, start_on_finish=True, persist=persist_data, multiplier=ramp_multiplier)
         else:
-            self.print_main.emit(f"Sweeping {self.set_param.label} to {self.end} ({self.set_param.unit})")
+            self.print_main.emit(f"Sweeping {self.set_param.label} to {self.stop} ({self.set_param.unit})")
             BaseSweep.start(self, persist_data=persist_data)
 
     def stop(self):
@@ -231,7 +231,7 @@ class Sweep1D(BaseSweep, QObject):
             return self.step_M4G()
 
         # If we aren't at the end, keep going
-        if abs(self.setpoint - self.end) - abs(self.step / 2) > abs(self.step) * self.err:
+        if abs(self.setpoint - self.stop) - abs(self.step / 2) > abs(self.step) * self.err:
             self.setpoint = self.setpoint + self.step
             safe_set(self.set_param, self.setpoint)
             return [(self.set_param, self.setpoint)]
@@ -268,7 +268,7 @@ class Sweep1D(BaseSweep, QObject):
 
         # Check if we have set the magnetic field yet
         if self.magnet_initialized is False:
-            self.instrument.set_field(self.end, block=False)
+            self.instrument.set_field(self.stop, block=False)
             self.magnet_initialized = True
             time.sleep(self.inter_delay)
 
@@ -309,10 +309,10 @@ class Sweep1D(BaseSweep, QObject):
             time.sleep(1)
 
             # Start the field sweep
-            self.instrument.field(self.end)
+            self.instrument.field(self.stop)
             self.magnet_initialized = True
         else:
-            self.instrument.field(self.end)
+            self.instrument.field(self.stop)
 
         # Grab our data
         try:
@@ -328,9 +328,9 @@ class Sweep1D(BaseSweep, QObject):
             self.print_main.emit("got bad data, trying again")
             return self.step_M4G()
         # Check our stop conditions- being at the end point
-        if abs(self.instrument.field() - self.end) <= 0.001:  # Check to see if field is within 1 mT of final value
+        if abs(self.instrument.field() - self.stop) <= 0.001:  # Check to see if field is within 1 mT of final value
             time.sleep(0.2)
-            if abs(self.instrument.field() - self.end) <= 0.001:  # Wait for a little bit, then check again, if true then we are done with the sweep
+            if abs(self.instrument.field() - self.stop) <= 0.001:  # Wait for a little bit, then check again, if true then we are done with the sweep
                 self.print_main.emit(f"Done with the sweep, {self.set_param.label} = {self.set_param.get()} (T)")
 
                 if self.continuous:
@@ -362,8 +362,8 @@ class Sweep1D(BaseSweep, QObject):
         self.send_updates(no_sp=True)
 
         temp = self.begin
-        self.begin = self.end
-        self.end = temp
+        self.begin = self.stop
+        self.stop = temp
         self.step = -1 * self.step
         self.setpoint -= self.step
 
@@ -416,8 +416,8 @@ class Sweep1D(BaseSweep, QObject):
     def ramp_to_zero(self):
         """ Ramps the set_param to 0, at the same rate as already specified. """
 
-        self.end = 0
-        if self.setpoint - self.end > 0:
+        self.stop = 0
+        if self.setpoint - self.stop > 0:
             self.step = (-1) * abs(self.step)
         else:
             self.step = abs(self.step)
@@ -489,7 +489,7 @@ class Sweep1D(BaseSweep, QObject):
         # Set our new values if desired
         if new_params is not None:
             self.begin = new_params[0]
-            self.end = new_params[1]
+            self.stop = new_params[1]
             self.step = new_params[2]
             self.inter_delay = 1 / new_params[3]
 
@@ -519,13 +519,13 @@ class Sweep1D(BaseSweep, QObject):
         if isinstance(self.instrument, AMI430):
             rate = safe_get(self.instrument.ramp_rate)
             if safe_get(self.instrument.ramp_rate_units) == 0:
-                t_est = abs((self.end - self.begin) / rate)
+                t_est = abs((self.stop - self.begin) / rate)
             else:
-                t_est = abs((self.end - self.begin) * 60 / rate)
+                t_est = abs((self.stop - self.begin) * 60 / rate)
         elif isinstance(self.instrument, M4G):
             t_est += 0
         else:
-            t_est = abs((self.begin - self.end) / self.step) * self.inter_delay
+            t_est = abs((self.begin - self.stop) / self.step) * self.inter_delay
 
             if self.continuous is True:
                 self.print_main.emit(f'No estimated time for {repr(self)} to run.')
