@@ -12,9 +12,9 @@ from ruamel.yaml import YAML
 import matplotlib
 from resources.ui.mainwindow_ui import Ui_Spearmint
 from GUI_Dialogs import *
-from handlers import WriteStream, OutputThread
 from queue import Queue
 
+from utils.handlers import WriteStream, OutputThread
 from utils.util import _value_parser, _name_parser, save_to_csv, safe_set, safe_get, ParameterException
 from utils.base_sweep import BaseSweep
 from utils.sweep0d import Sweep0D

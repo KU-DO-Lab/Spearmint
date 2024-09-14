@@ -16,7 +16,7 @@ from qcodes import load_by_run_spec
 from utils.util import _value_parser, save_to_csv
 from utils.sweep0d import Sweep0D
 from utils.sweep1d import Sweep1D
-from local_instruments import LOCAL_INSTRUMENTS
+from utils.local_instruments import LOCAL_INSTRUMENTS
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
