@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import QTableWidgetItem, QMessageBox, QFileDialog, \
     QPushButton, QCheckBox, QHeaderView, QLineEdit, QListWidgetItem, QAction
 from PyQt5.QtGui import QTextCursor
 import sys, os
-from pathlib import Path
 from datetime import datetime
 from ruamel.yaml import YAML
 import matplotlib
@@ -27,7 +26,7 @@ from qcodes.instrument import Instrument
 from qcodes.station import Station
 from qcodes.dataset.experiment_container import experiments
 from qcodes.logger.logger import start_all_logging
-from qcodes.dataset.data_set import DataSet, load_by_run_spec
+from qcodes.dataset.data_set import load_by_run_spec
 from qcodes.dataset import initialise_or_create_database_at, experiments
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
