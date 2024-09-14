@@ -23,10 +23,12 @@ from utils.sweep2d import Sweep2D
 from utils.sweep_queue import SweepQueue, DatabaseEntry
 from utils.abstract_settings import *
 import qcodes as qc
-from qcodes import Station, Instrument, initialise_or_create_database_at
+from qcodes.instrument import Instrument
+from qcodes.station import Station
 from qcodes.dataset.experiment_container import experiments
 from qcodes.logger.logger import start_all_logging
 from qcodes.dataset.data_set import DataSet, load_by_run_spec
+from qcodes.dataset import initialise_or_create_database_at, experiments
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 matplotlib.use('Qt5Agg')
@@ -134,6 +136,7 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.flipDirectionButton.clicked.connect(self.flip_direction)
             self.ui.endButton.clicked.connect(self.end_sweep)
             self.ui.saveButton.clicked.connect(self.setup_save)
+            self.ui.saveButton2D.clicked.connect(self.setup_save)
 
             self.ui.addSweepButton.clicked.connect(self.add_sweep_to_queue)
             self.ui.removeActionButton.clicked.connect(lambda: self.remove_action_from_queue(
@@ -771,14 +774,14 @@ for path_name, path_value in FILE_PATHS.items():
             self.sweep = sweep
             self.update_sequence_table()
 
-        def setup_save(self):
+        def setup_save(self) -> bool:
             save_data_ui = SaveDataGUI(self, self.db, self.exp_name, self.sample_name)
             if save_data_ui.exec_():
                 (self.db, self.exp_name, self.sample_name) = save_data_ui.get_save_info()
 
                 try:
                     initialise_or_create_database_at(self.db)
-                    qc.new_experiment(self.exp_name, self.sample_name)
+                    qc.dataset.new_experiment(self.exp_name, self.sample_name)
                     self.db_set = True
                     return True
                 except Exception as e:
