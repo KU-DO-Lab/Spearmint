@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'save_data.ui'
+# Form implementation generated from reading ui file 'resources/ui/save_data.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -14,14 +14,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_saveData(object):
     def setupUi(self, saveData):
         saveData.setObjectName("saveData")
-        saveData.resize(408, 202)
+        saveData.resize(400, 200)
         self.buttonBox = QtWidgets.QDialogButtonBox(saveData)
-        self.buttonBox.setGeometry(QtCore.QRect(130, 140, 161, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(120, 140, 166, 27))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.widget = QtWidgets.QWidget(saveData)
-        self.widget.setGeometry(QtCore.QRect(20, 30, 366, 95))
+        self.widget.setGeometry(QtCore.QRect(20, 30, 360, 95))
         self.widget.setObjectName("widget")
         self.gridLayout = QtWidgets.QGridLayout(self.widget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
@@ -29,28 +29,25 @@ class Ui_saveData(object):
         self.locationLabel = QtWidgets.QLabel(self.widget)
         self.locationLabel.setObjectName("locationLabel")
         self.gridLayout.addWidget(self.locationLabel, 0, 0, 1, 1)
+        self.browseButton = QtWidgets.QPushButton(self.widget)
+        self.browseButton.setObjectName("browseButton")
+        self.gridLayout.addWidget(self.browseButton, 0, 2, 1, 1)
+        self.expEdit = QtWidgets.QLineEdit(self.widget)
+        self.expEdit.setObjectName("expEdit")
+        self.gridLayout.addWidget(self.expEdit, 1, 1, 1, 1)
         self.locationEdit = QtWidgets.QLineEdit(self.widget)
         self.locationEdit.setReadOnly(True)
         self.locationEdit.setObjectName("locationEdit")
         self.gridLayout.addWidget(self.locationEdit, 0, 1, 1, 1)
-        self.browseButton = QtWidgets.QPushButton(self.widget)
-        self.browseButton.setObjectName("browseButton")
-        self.gridLayout.addWidget(self.browseButton, 0, 2, 1, 1)
-        self.expLabel = QtWidgets.QLabel(self.widget)
-        self.expLabel.setObjectName("expLabel")
-        self.gridLayout.addWidget(self.expLabel, 1, 0, 1, 1)
-        self.expEdit = QtWidgets.QLineEdit(self.widget)
-        self.expEdit.setObjectName("expEdit")
-        self.gridLayout.addWidget(self.expEdit, 1, 1, 1, 1)
-        self.comboBox = QtWidgets.QComboBox(self.widget)
-        self.comboBox.setObjectName("comboBox")
-        self.gridLayout.addWidget(self.comboBox, 1, 2, 1, 1)
-        self.sampleLabel = QtWidgets.QLabel(self.widget)
-        self.sampleLabel.setObjectName("sampleLabel")
-        self.gridLayout.addWidget(self.sampleLabel, 2, 0, 1, 1)
         self.sampleEdit = QtWidgets.QLineEdit(self.widget)
         self.sampleEdit.setObjectName("sampleEdit")
         self.gridLayout.addWidget(self.sampleEdit, 2, 1, 1, 1)
+        self.sampleLabel = QtWidgets.QLabel(self.widget)
+        self.sampleLabel.setObjectName("sampleLabel")
+        self.gridLayout.addWidget(self.sampleLabel, 2, 0, 1, 1)
+        self.expLabel = QtWidgets.QLabel(self.widget)
+        self.expLabel.setObjectName("expLabel")
+        self.gridLayout.addWidget(self.expLabel, 1, 0, 1, 1)
 
         self.retranslateUi(saveData)
         self.buttonBox.accepted.connect(saveData.accept) # type: ignore
@@ -62,8 +59,8 @@ class Ui_saveData(object):
         saveData.setWindowTitle(_translate("saveData", "Dialog"))
         self.locationLabel.setText(_translate("saveData", "Database:"))
         self.browseButton.setText(_translate("saveData", "Browse"))
-        self.expLabel.setText(_translate("saveData", "Experiment name:"))
         self.sampleLabel.setText(_translate("saveData", "Sample name:"))
+        self.expLabel.setText(_translate("saveData", "Experiment name:"))
 
 
 if __name__ == "__main__":
