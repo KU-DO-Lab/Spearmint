@@ -628,9 +628,9 @@ class UImain(QtWidgets.QMainWindow):
                                         "Database was not opened. Set save information before running the sweep again.")
                         return
 
+                print(f"Starting {self.sweep}")
                 self.sweep.start(ramp_to_start=self.ui.rampToStartBox.isChecked())
-
-
+                self.sweep.completed.connect(self.on_sweep_completed)
 
     def pause_resume_sweep(self):
         if self.sweep is None:
