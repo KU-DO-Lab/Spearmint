@@ -5,7 +5,6 @@ Experiments/
 Origin Files/
 cfg/
 logs/
-utils/
 utils/__pycache__
 resources/ui/__pycache__/
 .DS_Store
