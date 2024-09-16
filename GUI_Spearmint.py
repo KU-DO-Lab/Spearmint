@@ -851,7 +851,7 @@ for path_name, path_value in FILE_PATHS.items():
             self.ui.startOuter.setText(str(settings_outer['start']))
             self.ui.endOuter.setText(str(settings_outer['stop']))
             self.ui.stepOuter.setText(str(settings_outer['step']))
-            self.ui.stepsecOuter.setText(str(settings_outer['setp_sec']))
+            self.ui.stepsecOuter.setText(str(settings_outer['step_sec']))
 
         def save_sequence(self):
             (filename, x) = QFileDialog.getSaveFileName(self, "Save Sequence as JSON",
