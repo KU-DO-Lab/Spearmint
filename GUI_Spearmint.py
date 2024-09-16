@@ -196,7 +196,7 @@ for path_name, path_value in FILE_PATHS.items():
                                 widget.setPalette(palette)
                                                                         
                                 self.sweep_settings[self.ui.scanParameterBox.currentData()]
-                                self.set_param_index = box.current_index
+                                self.set_param_index = box.currentIndex()
 
                     case self.ui.scanParameterInner:
                         if box.currentIndex() == 0:
