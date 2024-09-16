@@ -176,6 +176,7 @@ for path_name, path_value in FILE_PATHS.items():
             self.sweep_settings[old_set_param] = sweep_1d.get()
 
             # Update UI elements and gray out / disable boxes if sweeping time parameter
+            # This only runs on the initial setup, and is not responsible for continuously updating the parameters.
             for box in [self.ui.scanParameterBox, self.ui.scanParameterInner, self.ui.scanParameterOuter]:
                 match box:
                     case self.ui.scanParameterBox:
@@ -398,6 +399,8 @@ for path_name, path_value in FILE_PATHS.items():
                 self.ui.outputParamTable.setCellWidget(n, 4, getButton)
 
                 self.ui.scanParameterBox.addItem(p.label, p)
+                self.ui.scanParameterInner.addItem(p.label, p)
+                self.ui.scanParameterOuter.addItem(p.label, p)
 
                 if p not in list(self.sweep_settings.keys()):
                     self.sweep_settings[p] = {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
