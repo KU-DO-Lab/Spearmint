@@ -844,14 +844,14 @@ for path_name, path_value in FILE_PATHS.items():
             '''
             Convenience function for setting "2D sweep" parameters
             '''
-            self.ui.startInner.setText(str(settings_inner.params.start))
-            self.ui.endInner.setText(str(settings_inner.params.stop))
-            self.ui.stepInner.setText(str(settings_inner.params.step))
-            self.ui.stepsecInner.setText(str(settings_inner.step_sec))
-            self.ui.startOuter.setText(str(settings_outer.params.start))
-            self.ui.endOuter.setText(str(settings_outer.params.stop))
-            self.ui.stepOuter.setText(str(settings_outer.params.step))
-            self.ui.stepsecOuter.setText(str(settings_outer.step_sec))
+            self.ui.startInner.setText(str(settings_inner['start']))
+            self.ui.endInner.setText(str(settings_inner['stop']))
+            self.ui.stepInner.setText(str(settings_inner['step']))
+            self.ui.stepsecInner.setText(str(settings_inner['step_sec']))
+            self.ui.startOuter.setText(str(settings_outer['start']))
+            self.ui.endOuter.setText(str(settings_outer['stop']))
+            self.ui.stepOuter.setText(str(settings_outer['step']))
+            self.ui.stepsecOuter.setText(str(settings_outer['setp_sec']))
 
         def save_sequence(self):
             (filename, x) = QFileDialog.getSaveFileName(self, "Save Sequence as JSON",
