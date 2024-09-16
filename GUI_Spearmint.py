@@ -156,6 +156,8 @@ for path_name, path_value in FILE_PATHS.items():
 
             self.ui.sequenceWidget.itemDoubleClicked.connect(self.edit_sequence_item)
             self.ui.scanParameterBox.currentIndexChanged.connect(self.update_param_combobox)
+            self.ui.scanParameterInner.currentIndexChanged.connect(self.update_param_combobox)
+            self.ui.scanParameterOuter.currentIndexChanged.connect(self.update_param_combobox)
             self.update_param_combobox()
 
 
@@ -194,10 +196,7 @@ for path_name, path_value in FILE_PATHS.items():
                                 widget.setPalette(palette)
                                                                         
                                 self.sweep_settings[self.ui.scanParameterBox.currentData()]
-                                if box == self.ui.scanParameterInner:
-                                    self.inner_scan_parameter_index = box.currentIndex()
-                                else:
-                                    self.outer_scan_parameter_index = 0
+                                self.set_param_index = box.current_index
 
                     case self.ui.scanParameterInner:
                         if box.currentIndex() == 0:
@@ -214,10 +213,7 @@ for path_name, path_value in FILE_PATHS.items():
                                 widget.setPalette(palette)
                                     
                                 self.update_sweep_box_2D_page(self.sweep_settings[self.ui.scanParameterInner.currentData()], self.sweep_settings[self.ui.scanParameterOuter.currentData()])
-                                if box == self.ui.scanParameterInner:
-                                    self.inner_scan_parameter_index = box.currentIndex()
-                                else:
-                                    self.outer_scan_parameter_index = 0
+                                self.inner_scan_parameter_index = box.currentIndex()
 
                     case self.ui.scanParameterOuter:
                         if box.currentIndex() == 0:
@@ -234,10 +230,7 @@ for path_name, path_value in FILE_PATHS.items():
                                 widget.setPalette(palette)
 
                                 self.update_sweep_box_2D_page(self.sweep_settings[self.ui.scanParameterInner.currentData()], self.sweep_settings[self.ui.scanParameterOuter.currentData()])
-                                if box == self.ui.scanParameterInner:
-                                    self.inner_scan_parameter_index = box.currentIndex()
-                                else:
-                                    self.outer_scan_parameter_index = 0
+                                self.outer_scan_parameter_index = box.currentIndex()
 
         def start_logs(self):
             self.stdout_filename = os.path.join(FILE_PATHS["log_base_dir"], f'stdout-{current_date}.txt')
