@@ -954,6 +954,7 @@ class UImain(QtWidgets.QMainWindow):
 
         for name, dev in self.devices.items():
             act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
+            print({dev.__class__.__name__})
             act.setData(dev)
             self.ui.temperatureComboBox.addItem(dev.name)
 
