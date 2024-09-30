@@ -571,7 +571,7 @@ class Ui_Spearmint(object):
         self.menubar.addAction(self.menuData.menuAction())
 
         self.retranslateUi(Spearmint)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(Spearmint)
 
     def retranslateUi(self, Spearmint):
