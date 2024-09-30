@@ -404,12 +404,6 @@ class UImain(QtWidgets.QMainWindow):
                                           'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
                                           'ramp_to_start': True}
 
-                
-            for name, dev in self.devices.items():
-                act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
-                act.setData(dev)
-                self.setData(dev)
-
     def set_param(self, p, valueitem):
         try:
             if "Int" in repr(p.vals) or "Number" in repr(p.vals):
@@ -956,10 +950,12 @@ class UImain(QtWidgets.QMainWindow):
         self.ui.menuInstruments.addAction(self.ui.removeInstrumentAction)
         self.ui.menuInstruments.addSeparator()
 
+        self.ui.temperatureComboBox.clear()
+
         for name, dev in self.devices.items():
             act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
             act.setData(dev)
-            self.setData(dev)
+            self.ui.temperatureComboBox.addItem(dev.name)
 
     def remove_device(self):
         remove_ui = RemoveInstrumentGUI(self.devices, self)
@@ -967,6 +963,7 @@ class UImain(QtWidgets.QMainWindow):
             dev = remove_ui.ui.instrumentBox.currentText()
             if len(dev) > 0:
                 self.do_remove_device(dev)
+        self.update_instrument_menu()
 
     def do_remove_device(self, name):
         self.station.remove_component(name)
