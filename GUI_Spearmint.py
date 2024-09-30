@@ -954,9 +954,10 @@ class UImain(QtWidgets.QMainWindow):
 
         for name, dev in self.devices.items():
             act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
-            print({dev.__class__.__name__})
             act.setData(dev)
-            self.ui.temperatureComboBox.addItem(dev.name)
+            if dev.__class__.__name__ == "LakeshoreModel336":
+                self.ui.temperatureComboBox_1.addItem(dev.name)
+                self.ui.temperatureComboBox_2.addItem(dev.name)
 
     def remove_device(self):
         remove_ui = RemoveInstrumentGUI(self.devices, self)
