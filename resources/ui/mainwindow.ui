@@ -1066,7 +1066,7 @@
       <property name="title">
        <string>Instrument Settings</string>
       </property>
-      <widget class="QComboBox" name="comboBox">
+      <widget class="QComboBox" name="temperatureComboBox">
        <property name="geometry">
         <rect>
          <x>130</x>

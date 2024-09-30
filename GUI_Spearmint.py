@@ -28,6 +28,7 @@ from qcodes.dataset.experiment_container import experiments
 from qcodes.logger.logger import start_all_logging
 from qcodes.dataset.data_set import load_by_run_spec
 from qcodes.dataset import initialise_or_create_database_at, experiments
+import pyvisa
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 matplotlib.use('Qt5Agg')
@@ -402,6 +403,12 @@ class UImain(QtWidgets.QMainWindow):
                 self.sweep_settings[p] = {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
                                           'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
                                           'ramp_to_start': True}
+
+                
+            for name, dev in self.devices.items():
+                act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
+                act.setData(dev)
+                self.setData(dev)
 
     def set_param(self, p, valueitem):
         try:
@@ -909,6 +916,7 @@ class UImain(QtWidgets.QMainWindow):
                 self.devices[d['name']] = new_dev
                 self.station.add_component(new_dev, update_snapshot=False)
                 self.update_instrument_menu()
+                # self.update_()
 
     def connect_device(self, device, classtype, name, address, args=[], kwargs={}):
         new_dev = None
@@ -951,6 +959,7 @@ class UImain(QtWidgets.QMainWindow):
         for name, dev in self.devices.items():
             act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
             act.setData(dev)
+            self.setData(dev)
 
     def remove_device(self):
         remove_ui = RemoveInstrumentGUI(self.devices, self)
@@ -1199,6 +1208,8 @@ def main():
 
     window = UImain()
     window.setAttribute(QtCore.Qt.WA_StyledBackground)
+
+    print(pyvisa.ResourceManager().list_resources())
 
     app.exec_()
 
