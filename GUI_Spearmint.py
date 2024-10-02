@@ -463,6 +463,7 @@ class UImain(QtWidgets.QMainWindow):
                                     plot_data=plot, plot_bin=plotbin)
 
                 # Set up Sweep1D if we're not sweeping time
+
                 else:
                     start = _value_parser(self.ui.startEdit.text())
                     stop = _value_parser(self.ui.endEdit.text())
@@ -490,7 +491,7 @@ class UImain(QtWidgets.QMainWindow):
                         if param is not sweep.set_param:
                             sweep.follow_param(param)
 
-                sweep.update_signal.connect(self.receive_updates)
+                sweep.update_signal.connect(self.receive_updates_sweeps)
                 sweep.dataset_signal.connect(self.receive_dataset)
 
                 if isinstance(sweep, Sweep0D) and len(sweep._params) == 0 and sweep.plot_data:
@@ -525,7 +526,7 @@ class UImain(QtWidgets.QMainWindow):
 
     def start_sweep(self):
 
-        # receive_updates signal needs to be read
+        # receive_updates_sweeps signal needs to be read
 
         match self.ui.tabWidget.currentIndex():
             # Corresponds to the 1D Sweep tab
@@ -882,7 +883,7 @@ class UImain(QtWidgets.QMainWindow):
                 self.update_sequence_table()
                 for sweep in self.sweep_queue.queue:
                     sweep.dataset_signal.connect(self.receive_dataset)
-                    sweep.update_signal.connect(self.receive_updates)
+                    sweep.update_signal.connect(self.receive_updates_sweeps)
             except Exception as e:
                 self.show_error('Error', "Could not load the sequence.", e)
 
@@ -910,6 +911,7 @@ class UImain(QtWidgets.QMainWindow):
                 self.devices[d['name']] = new_dev
                 self.station.add_component(new_dev, update_snapshot=False)
                 self.update_instrument_menu()
+
                 # self.update_()
 
     def connect_device(self, device, classtype, name, address, args=[], kwargs={}):
@@ -957,7 +959,15 @@ class UImain(QtWidgets.QMainWindow):
             act.setData(dev)
             if dev.__class__.__name__ == "LakeshoreModel336":
                 self.ui.temperatureComboBox_1.addItem(dev.name)
-                self.ui.temperatureComboBox_2.addItem(dev.name)
+
+                # may need a custom class implementation to flush old data after a max time instead of ending the sweep
+                sweep = Sweep0D(max_time=1e6, inter_delay=1 / 5, save_data=False, plot_data=True, plot_bin=1)
+                sweep.update_signal.connect(self.receive_updates_temperature)
+
+            # # also try and automatically initialize a TM620 in slot 2
+            # elif dev.__class__.__name__ == ""
+            #     self.ui.temperatureComboBox_2.addItem(dev.name) 
+
 
     def remove_device(self):
         remove_ui = RemoveInstrumentGUI(self.devices, self)
@@ -986,7 +996,7 @@ class UImain(QtWidgets.QMainWindow):
         self.stdout_file.close()
 
     @pyqtSlot(dict)
-    def receive_updates(self, update_dict):
+    def receive_updates_sweeps(self, update_dict):
         is_running = update_dict['status']
         set_param = update_dict['set_param']
         setpoint = update_dict['setpoint']
@@ -1009,6 +1019,38 @@ class UImain(QtWidgets.QMainWindow):
             self.ui.directionValue.setText('Backward')
         else:
             self.ui.directionValue.setText('Forward')
+
+    
+    @pyqtSlot(dict)
+    def receive_updates_temperature(self, instrument, update_dict):
+
+        for name, p in self.track_params.items():
+            print(name)
+
+        is_running = update_dict['status']
+        channel_A = update_dict['channel_A']
+        channel_B = update_dict['channel_B']
+        setpoint = update_dict['channel_B']
+
+
+
+        # self.ui.scanValue.setText(f'{is_running}')
+        # if is_running:
+        #     self.ui.scanValue.setStyleSheet('color: green')
+        #     self.ui.pauseButton.setText('Pause')
+        # else:
+        #     self.ui.scanValue.setStyleSheet('color: red')
+        #     self.ui.pauseButton.setText('Resume')
+        # if set_param == 'time':
+        #     self.ui.paramValue.setText('time')
+        # else:
+        #     self.ui.paramValue.setText(f'{set_param.label}')
+        # if setpoint is not None:
+        #     self.ui.setpointValue.setText(f'{str(setpoint)}')
+        # if direction:
+        #     self.ui.directionValue.setText('Backward')
+        # else:
+        #     self.ui.directionValue.setText('Forward')
 
     def on_sweep_completed(self):
         directory = FILE_PATHS['origin_base_dir']
