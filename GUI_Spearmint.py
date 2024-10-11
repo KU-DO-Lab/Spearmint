@@ -961,7 +961,7 @@ class UImain(QtWidgets.QMainWindow):
                 self.ui.temperatureComboBox_1.addItem(dev.name)
 
                 # may need a custom class implementation to flush old data after a max time instead of ending the sweep
-                sweep = Sweep0D(max_time=1e6, inter_delay=1 / 5, save_data=False, plot_data=True, plot_bin=1)
+                sweep = BaseSweep(inter_delay=0.1, save_data = False, plot_data=False)
                 sweep.update_signal.connect(self.receive_updates_temperature)
 
             # # also try and automatically initialize a TM620 in slot 2
@@ -997,6 +997,9 @@ class UImain(QtWidgets.QMainWindow):
 
     @pyqtSlot(dict)
     def receive_updates_sweeps(self, update_dict):
+
+        print("test- Sweeps running!")
+
         is_running = update_dict['status']
         set_param = update_dict['set_param']
         setpoint = update_dict['setpoint']
@@ -1022,7 +1025,7 @@ class UImain(QtWidgets.QMainWindow):
 
     
     @pyqtSlot(dict)
-    def receive_updates_temperature(self, instrument, update_dict):
+    def receive_updates_temperature(self, update_dict):
 
         for name, p in self.track_params.items():
             print(name)
@@ -1032,12 +1035,10 @@ class UImain(QtWidgets.QMainWindow):
         channel_B = update_dict['channel_B']
         setpoint = update_dict['channel_B']
 
-
-
-        # self.ui.scanValue.setText(f'{is_running}')
-        # if is_running:
-        #     self.ui.scanValue.setStyleSheet('color: green')
-        #     self.ui.pauseButton.setText('Pause')
+        self.ui.scanValue.setText(f'{is_running}')
+        if is_running:
+            self.ui.temperatureStatus_1.setStyleSheet('color: green')
+            self.ui.pauseButton.setText('Pause')
         # else:
         #     self.ui.scanValue.setStyleSheet('color: red')
         #     self.ui.pauseButton.setText('Resume')
