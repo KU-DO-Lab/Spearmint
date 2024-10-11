@@ -28,6 +28,7 @@ from qcodes.dataset.experiment_container import experiments
 from qcodes.logger.logger import start_all_logging
 from qcodes.dataset.data_set import load_by_run_spec
 from qcodes.dataset import initialise_or_create_database_at, experiments
+import pyvisa
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 matplotlib.use('Qt5Agg')
@@ -462,6 +463,7 @@ class UImain(QtWidgets.QMainWindow):
                                     plot_data=plot, plot_bin=plotbin)
 
                 # Set up Sweep1D if we're not sweeping time
+
                 else:
                     start = _value_parser(self.ui.startEdit.text())
                     stop = _value_parser(self.ui.endEdit.text())
@@ -489,7 +491,7 @@ class UImain(QtWidgets.QMainWindow):
                         if param is not sweep.set_param:
                             sweep.follow_param(param)
 
-                sweep.update_signal.connect(self.receive_updates)
+                sweep.update_signal.connect(self.receive_updates_sweeps)
                 sweep.dataset_signal.connect(self.receive_dataset)
 
                 if isinstance(sweep, Sweep0D) and len(sweep._params) == 0 and sweep.plot_data:
@@ -524,7 +526,7 @@ class UImain(QtWidgets.QMainWindow):
 
     def start_sweep(self):
 
-        # receive_updates signal needs to be read
+        # receive_updates_sweeps signal needs to be read
 
         match self.ui.tabWidget.currentIndex():
             # Corresponds to the 1D Sweep tab
@@ -881,7 +883,7 @@ class UImain(QtWidgets.QMainWindow):
                 self.update_sequence_table()
                 for sweep in self.sweep_queue.queue:
                     sweep.dataset_signal.connect(self.receive_dataset)
-                    sweep.update_signal.connect(self.receive_updates)
+                    sweep.update_signal.connect(self.receive_updates_sweeps)
             except Exception as e:
                 self.show_error('Error', "Could not load the sequence.", e)
 
@@ -909,6 +911,8 @@ class UImain(QtWidgets.QMainWindow):
                 self.devices[d['name']] = new_dev
                 self.station.add_component(new_dev, update_snapshot=False)
                 self.update_instrument_menu()
+
+                # self.update_()
 
     def connect_device(self, device, classtype, name, address, args=[], kwargs={}):
         new_dev = None
@@ -948,6 +952,7 @@ class UImain(QtWidgets.QMainWindow):
         self.ui.menuInstruments.addAction(self.ui.removeInstrumentAction)
         self.ui.menuInstruments.addSeparator()
 
+
         for name, dev in self.devices.items():
             act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
             act.setData(dev)
@@ -958,6 +963,7 @@ class UImain(QtWidgets.QMainWindow):
             dev = remove_ui.ui.instrumentBox.currentText()
             if len(dev) > 0:
                 self.do_remove_device(dev)
+        self.update_instrument_menu()
 
     def do_remove_device(self, name):
         self.station.remove_component(name)
@@ -978,7 +984,10 @@ class UImain(QtWidgets.QMainWindow):
         self.stdout_file.close()
 
     @pyqtSlot(dict)
-    def receive_updates(self, update_dict):
+    def receive_updates_sweeps(self, update_dict):
+
+        print("test")
+        
         is_running = update_dict['status']
         set_param = update_dict['set_param']
         setpoint = update_dict['setpoint']
@@ -1199,6 +1208,8 @@ def main():
 
     window = UImain()
     window.setAttribute(QtCore.Qt.WA_StyledBackground)
+
+    print(pyvisa.ResourceManager().list_resources())
 
     app.exec_()
 
