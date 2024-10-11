@@ -28,6 +28,7 @@ from qcodes.dataset.experiment_container import experiments
 from qcodes.logger.logger import start_all_logging
 from qcodes.dataset.data_set import load_by_run_spec
 from qcodes.dataset import initialise_or_create_database_at, experiments
+import pyvisa
 
 os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 matplotlib.use('Qt5Agg')
@@ -1199,6 +1200,8 @@ def main():
 
     window = UImain()
     window.setAttribute(QtCore.Qt.WA_StyledBackground)
+
+    print(pyvisa.ResourceManager().list_resources())
 
     app.exec_()
 
