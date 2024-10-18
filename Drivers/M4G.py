@@ -12,32 +12,32 @@ log = logging.getLogger(__name__)
 
 #TODO Change these values to match our magnet
 DEFAULT_LIMITS = {
-            'RANGE0' : 40., #A
-            'RANGE1' : 80.,
-            'RANGE2' : 96.5,
-            'RANGE3' : 98.,
-            'RANGE4' : 99.,
+            'RANGE0' : 35.0, #A
+            'RANGE1' : 50.0,
+            'RANGE2' : 60.0,
+            'RANGE3' : 66.848,
+            'RANGE4' : 100.0, #Do not go to range 4#
         }
 DEFAULT_RATES = {
-            'RANGE0' : 0.04, #A/s
-            'RANGE1' : 0.02,
-            'RANGE2' : 0.01,
-            'RANGE3' : 0.001,
-            'RANGE4' : 0.001,
+            'RANGE0' : 0.0898, #A/s
+            'RANGE1' : 0.0449,
+            'RANGE2' : 0.0225,
+            'RANGE3' : 0.0112,
+            'RANGE4' : 0.0001,
         }
 MAX_RATES = {
-            'RANGE0' : 0.0468, #A/s
-            'RANGE1' : 0.0234,
-            'RANGE2' : 0.0117,
-            'RANGE3' : 0.001,
-            'RANGE4' : 0.001,
+            'RANGE0' : 0.0898, #A/s
+            'RANGE1' : 0.0449,
+            'RANGE2' : 0.0225,
+            'RANGE3' : 0.0112,
+            'RANGE4' : 0.0001,
 }
 
-MAX_SUPPLY_CURRENT = 100 #A
-FIELD_TO_CURRENT = 1246.7/1e4 #T/A
+MAX_SUPPLY_CURRENT = 66.656 #A
+FIELD_TO_CURRENT = 1350.2/1e4 #T/A
 
-MIN_FIELD = -0.1 #T
-MAX_FIELD = 0.1
+MIN_FIELD = -9 #T
+MAX_FIELD = 9
 
 class M4G(VisaInstrument):
     def __init__(self, name, address, **kwargs):
