@@ -1,7 +1,7 @@
 #Cryomagnetics Model 4G Superconducting Magnet Power Supply
 #Created by Dacen Waters for Yankowitz Lab VTI
-#Last updated June 1st, 2021
-
+#Altered by Jared Madsen for DO Lab
+from string import ascii_letters
 import logging
 from qcodes import VisaInstrument
 from qcodes import validators as vals
@@ -10,33 +10,34 @@ import pyvisa
 
 log = logging.getLogger(__name__)
 
+#TODO Change these values to match our magnet
 DEFAULT_LIMITS = {
-            'RANGE0' : 40., #A
-            'RANGE1' : 80.,
-            'RANGE2' : 96.5,
-            'RANGE3' : 98.,
-            'RANGE4' : 99.,
+            'RANGE0' : 35.0, #A
+            'RANGE1' : 50.0,
+            'RANGE2' : 60.0,
+            'RANGE3' : 66.848,
+            'RANGE4' : 100.0, #Do not go to range 4#
         }
 DEFAULT_RATES = {
-            'RANGE0' : 0.04, #A/s
-            'RANGE1' : 0.02,
-            'RANGE2' : 0.01,
-            'RANGE3' : 0.001,
-            'RANGE4' : 0.001,
+            'RANGE0' : 0.0898, #A/s
+            'RANGE1' : 0.0449,
+            'RANGE2' : 0.0225,
+            'RANGE3' : 0.0112,
+            'RANGE4' : 0.0001,
         }
 MAX_RATES = {
-            'RANGE0' : 0.0468, #A/s
-            'RANGE1' : 0.0234,
-            'RANGE2' : 0.0117,
-            'RANGE3' : 0.001,
-            'RANGE4' : 0.001,
+            'RANGE0' : 0.0898, #A/s
+            'RANGE1' : 0.0449,
+            'RANGE2' : 0.0225,
+            'RANGE3' : 0.0112,
+            'RANGE4' : 0.0001,
 }
 
-MAX_SUPPLY_CURRENT = 100 #A
-FIELD_TO_CURRENT = 1246.7/1e4 #T/A
+MAX_SUPPLY_CURRENT = 66.656 #A
+FIELD_TO_CURRENT = 1350.2/1e4 #T/A
 
-MIN_FIELD = -12.0 #T
-MAX_FIELD = 12.0
+MIN_FIELD = -9 #T
+MAX_FIELD = 9
 
 class M4G(VisaInstrument):
     def __init__(self, name, address, **kwargs):
@@ -162,36 +163,28 @@ class M4G(VisaInstrument):
         
     def _get_iout(self): #Output current in current units
         result = self.ask('IMAG?')
-        units = self.units()
-        if units == 'A':
-            return float(result[:-1])
-        else:
-            return (float(result[:-2]))
+        return result
+        
     def _get_vout(self): #Output voltage in volts
         result = self.ask('VOUT?')
-        return float(result[:-1])
+        return result
     def _get_ulim(self): #Get upper limit in current units
         result = self.ask('ULIM?')
-        units = self.units()
-        if units == 'A':
-            return float(result[:-1])
-        else:
-            return (float(result[:-2]))
+        result = result[:-1].rstrip(ascii_letters)
+        return float(result)
+        
     def _get_llim(self): #Get lower limit in current units
         result = self.ask('LLIM?')
-        units = self.units()
-        if units == 'A':
-            return float(result[:-1])
-        else:
-            return (float(result[:-2]))
-        
+        result = result[:-1].rstrip(ascii_letters)
+        return float(result)
+    
     def _get_field(self): #Returns the field in Tesla (regardless of current units)
         result = self.ask('IMAG?')
         units = self.units()
         
         for i in range(10): #Sometimes the magnet returns the IMAG? query for some reason. If this happens, wait one second and try asking again
             try: 
-                float(result[:-2])
+                result[:-1].rstrip(ascii_letters)
                 break
             except:
                 print('Communication error: returned value ' + result)
@@ -200,9 +193,9 @@ class M4G(VisaInstrument):
                 
             
         if units == 'A':
-            return float(result[:-1])*FIELD_TO_CURRENT
+            return float(result[:-1].rstrip(ascii_letters))*FIELD_TO_CURRENT
         else:
-            return (float(result[:-2]))/10
+            return (float(result[:-1].rstrip(ascii_letters)))/10
         
     def _set_field(self, field): #Sweeps to the input field value (field in T)
         self.setpoint(field)
@@ -210,7 +203,7 @@ class M4G(VisaInstrument):
             self.write('SWEEP ZERO')
         else:
             self.write('SWEEP UP')
-        self.log.info('Sweeping field to {} T'.format(field))
+        print('Sweeping field to {} T'.format(field))
 #         sleep(0.05)
 #         while self.field() != field:
 #             sleep(0.05)
@@ -297,9 +290,7 @@ class M4G(VisaInstrument):
         self.write_raw('RATE 5 {}'.format(init_val))
         if test_val != init_val:
             pass
-        else:
-            raise RemoteError('Remote control not enabled (toggle the Local button on the front panel until the purple \'Local\' text vanishes from the screen)')       
-           
+        
     def examine(self):
         for r in range(5):
             limit = float(self.ask('RANGE? {}'.format(r)))

@@ -6,99 +6,258 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>322</width>
-    <height>252</height>
+    <width>602</width>
+    <height>243</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <widget class="QDialogButtonBox" name="dialogBox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>160</y>
-     <width>161</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
-  <widget class="QWidget" name="horizontalLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>20</y>
-     <width>182</width>
-     <height>163</height>
-    </rect>
-   </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QLabel" name="instrumentLabel">
-        <property name="text">
-         <string>Instrument</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="nameLabel">
-        <property name="text">
-         <string>Name</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="addressLabel">
-        <property name="text">
-         <string>Address</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="argsLabel">
-        <property name="text">
-         <string>args</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="kwargsLabel">
-        <property name="text">
-         <string>kwargs</string>
-        </property>
-       </widget>
+  <layout class="QHBoxLayout" name="horizontalLayout_4">
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_6">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="instrumentLabel">
+           <property name="text">
+            <string>Instrument</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="nameLabel">
+           <property name="text">
+            <string>Name</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="addressLabel">
+           <property name="text">
+            <string>Address</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="argsLabel">
+           <property name="text">
+            <string>args</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="kwargsLabel">
+           <property name="text">
+            <string>kwargs</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QComboBox" name="instrumentBox">
+           <property name="maximumSize">
+            <size>
+             <width>300</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="nameEdit">
+           <property name="maximumSize">
+            <size>
+             <width>300</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="addressEdit">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>300</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="argsEdit">
+           <property name="maximumSize">
+            <size>
+             <width>300</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="kwargsEdit">
+           <property name="maximumSize">
+            <size>
+             <width>300</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="dialogBox">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+       </property>
+       <property name="centerButtons">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>Magnet Config</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QLabel" name="instrumentLabel_2">
+              <property name="text">
+               <string>Max Current Limits:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="nameLabel_2">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="addressLabel_2">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="argsLabel_2">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="kwargsLabel_2">
+              <property name="text">
+               <string>Coil Constant (T/A):</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QLabel" name="instrumentLabel_3">
+            <property name="text">
+             <string>1</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="nameLabel_3">
+            <property name="text">
+             <string>2</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="addressLabel_3">
+            <property name="text">
+             <string>3</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="argsLabel_3">
+            <property name="text">
+             <string>4</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="kwargsLabel_3">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QLineEdit" name="addressEdit_2"/>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="argsEdit_2"/>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="nameEdit_3"/>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="nameEdit_2"/>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="kwargsEdit_2"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </item>
      </layout>
-    </item>
-    <item>
-     <layout class="QVBoxLayout" name="verticalLayout_2">
-      <item>
-       <widget class="QComboBox" name="instrumentBox"/>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="nameEdit"/>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="addressEdit"/>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="argsEdit"/>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="kwargsEdit"/>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections>
