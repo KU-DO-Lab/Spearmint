@@ -998,8 +998,6 @@ class UImain(QtWidgets.QMainWindow):
     @pyqtSlot(dict)
     def receive_updates_sweeps(self, update_dict):
 
-        print("test- Sweeps running!")
-
         is_running = update_dict['status']
         set_param = update_dict['set_param']
         setpoint = update_dict['setpoint']
