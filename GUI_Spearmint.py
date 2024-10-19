@@ -442,70 +442,371 @@ class UImain(QtWidgets.QMainWindow):
             param = self.ui.scanParameterBox.itemData(n + 1)
             self.ui.scanParameterBox.setItemText(n + 1, param.label)
 
-    def create_sweep(self):
-        match self.ui.tabWidget.currentIndex():
-            # Corresponds to the 1D sweep tab
-            case 0:
-                # Check if we're scanning time, then if so, do Sweep0D
-                if self.ui.scanParameterBox.currentText() == 'time':
-                    stop = _value_parser(self.ui.endEdit.text())
-                    stepsec = _value_parser(self.ui.stepsecEdit.text())
-                    plotbin = self.ui.plotbinEdit.text()
-                    plotbin = int(plotbin)
+
+        def create_sweep(self):
+            match self.ui.tabWidget.currentIndex():
+                # Corresponds to the 1D sweep tab
+                case 0:
+                    # Check if we're scanning time, then if so, do Sweep0D
+                    if self.ui.scanParameterBox.currentText() == 'time':
+                        stop = _value_parser(self.ui.endEdit.text())
+                        stepsec = _value_parser(self.ui.stepsecEdit.text())
+                        plotbin = self.ui.plotbinEdit.text()
+                        plotbin = int(plotbin)
+                        if plotbin < 1:
+                            self.ui.plotbinEdit.setText('1')
+                            raise ValueError
+
+                        save = self.ui.saveBox.isChecked()
+                        plot = self.ui.livePlotBox.isChecked()
+
+                        sweep = Sweep0D(max_time=stop, inter_delay=1 / stepsec, save_data=save,
+                                        plot_data=plot, plot_bin=plotbin)
+
+                    # Set up Sweep1D if we're not sweeping time
+                    else:
+                        start = _value_parser(self.ui.startEdit.text())
+                        stop = _value_parser(self.ui.endEdit.text())
+                        step = _value_parser(self.ui.stepEdit.text())
+                        stepsec = _value_parser(self.ui.stepsecEdit.text())
+                        plotbin = self.ui.plotbinEdit.text()
+                        plotbin = int(plotbin)
+                        if plotbin < 1:
+                            self.ui.plotbinEdit.setText('1')
+                            raise ValueError
+
+                        set_param = self.ui.scanParameterBox.currentData()
+                        twoway = self.ui.bidirectionalBox.isChecked()
+                        continuous = self.ui.continualBox.isChecked()
+                        save = self.ui.saveBox.isChecked()
+                        plot = self.ui.livePlotBox.isChecked()
+
+                        sweep = Sweep1D(set_param, start, stop, step, inter_delay=1.0 / stepsec,
+                                        bidirectional=twoway, continual=continuous, save_data=save,
+                                        plot_data=plot, x_axis_time=0, plot_bin=plotbin)
+
+                    for n in range(self.ui.followParamTable.rowCount()):
+                        if self.ui.followParamTable.cellWidget(n, 3).isChecked():
+                            param = self.ui.followParamTable.item(n, 0).data(32)
+                            if param is not sweep.set_param:
+                                sweep.follow_param(param)
+
+                    sweep.update_signal.connect(self.receive_updates)
+                    sweep.dataset_signal.connect(self.receive_dataset)
+
+                    if isinstance(sweep, Sweep0D) and len(sweep._params) == 0 and sweep.plot_data:
+                        self.show_error("Error", "Can't plot time against nothing. Either select some parameters to follow or "
+                            "unselect \'plot data\'.")
+                        sweep = None
+
+                    return sweep 
+
+                # Corresponds to the 2D Sweep tab
+                case 1:
+                    if self.ui.scanParameterInner.currentText() == 'time' or self.ui.scanParameterOuter.currentText() == 'time':
+                        self.show_error("Error", "Can't sweep time for dual gate measurements. Select something else to sweep.")
+                        return
+
+                    # [param, start, stop, step] 
+                    in_params = [_value_parser(self.ui.scanParameterInner.currentData()), _value_parser(self.ui.startInner.text()), _value_parser(self.ui.endInner.text()), _value_parser(self.ui.stepInner.text())]
+                    out_params = [_value_parser(self.ui.scanParameterOuter.currentData()), _value_parser(self.ui.startOuter.text()), _value_parser(self.ui.endOuter.text()), _value_parser(self.ui.stepOuter.text())]
+                    stepsec_inner = _value_parser(self.ui.stepsecInner.text())
+                    stepsec_outer = _value_parser(self.ui.stepsecOuter.text())
+                    save = self.ui.saveBox2D.isChecked()
+                    plot = self.ui.livePlotBox2D.isChecked()
+                    plotbin = int(self.ui.plotbinEdit2D.text())
                     if plotbin < 1:
                         self.ui.plotbinEdit.setText('1')
                         raise ValueError
 
-                    save = self.ui.saveBox.isChecked()
-                    plot = self.ui.livePlotBox.isChecked()
+                    sweep = Sweep2D(in_params=in_params, out_params=out_params, 
+                                    inter_delay=1.0/stepsec_inner, outer_delay=1.0/stepsec_outer, 
+                                    save_data=save, plot_data=plot)
+                    return sweep
 
-                    sweep = Sweep0D(max_time=stop, inter_delay=1 / stepsec, save_data=save,
-                                    plot_data=plot, plot_bin=plotbin)
+        # Responsible for making the tables in the parameters tab look good.
+        def init_tables(self):
+            follow_header = self.ui.followParamTable.horizontalHeader()
+            follow_header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            follow_header.resizeSection(0, 60)
+            follow_header.setSectionResizeMode(1, QHeaderView.Fixed)
+            follow_header.resizeSection(1, 60)
+            follow_header.setSectionResizeMode(2, QHeaderView.Stretch)
+            follow_header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
+            follow_header.setSectionResizeMode(4, QHeaderView.Fixed)
+            follow_header.resizeSection(4, 40)
 
-                # Set up Sweep1D if we're not sweeping time
+            output_header = self.ui.outputParamTable.horizontalHeader()
+            output_header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+            output_header.resizeSection(0, 60)
+            output_header.setSectionResizeMode(1, QHeaderView.Fixed)
+            output_header.resizeSection(1, 60)
+            output_header.setSectionResizeMode(2, QHeaderView.Stretch)
+            output_header.setSectionResizeMode(3, QHeaderView.Fixed)
+            output_header.resizeSection(3, 40)
+            output_header.setSectionResizeMode(4, QHeaderView.Fixed)
+            output_header.resizeSection(4, 40)
 
+        def make_connections(self):
+            self.ui.editParameterButton.clicked.connect(self.edit_parameters)
+            self.ui.startButton.clicked.connect(self.start_sweep)
+            self.ui.startButton2D.clicked.connect(self.start_sweep)
+            self.ui.pauseButton.clicked.connect(self.pause_resume_sweep)
+            self.ui.flipDirectionButton.clicked.connect(self.flip_direction)
+            self.ui.endButton.clicked.connect(self.end_sweep)
+            self.ui.saveButton.clicked.connect(self.setup_save)
+            self.ui.saveButton2D.clicked.connect(self.setup_save)
+
+            self.ui.addSweepButton.clicked.connect(self.add_sweep_to_queue)
+            self.ui.removeActionButton.clicked.connect(lambda: self.remove_action_from_queue(
+                self.ui.sequenceWidget.currentRow()))
+            self.ui.startSequenceButton.clicked.connect(self.start_sequence)
+            self.ui.addSaveButton.clicked.connect(self.add_save_to_sequence)
+            self.ui.upSequenceButton.clicked.connect(lambda: self.move_action_in_sequence(-1))
+            self.ui.downSequenceButton.clicked.connect(lambda: self.move_action_in_sequence(+1))
+
+            self.ui.actionSaveStation.triggered.connect(self.save_station)
+            self.ui.actionLoadStation.triggered.connect(self.load_station)
+            self.ui.actionQuit.triggered.connect(self.close)
+
+            self.ui.actionLoad_Sweep.triggered.connect(self.load_sweep)
+            self.ui.actionSave_Sweep.triggered.connect(self.save_sweep)
+            self.ui.actionSave_Sequence.triggered.connect(self.save_sequence)
+            self.ui.actionLoad_Sequence.triggered.connect(self.load_sequence)
+
+            self.ui.sequenceWidget.itemDoubleClicked.connect(self.edit_sequence_item)
+            self.ui.scanParameterBox.currentIndexChanged.connect(self.update_param_combobox)
+            self.ui.scanParameterInner.currentIndexChanged.connect(self.update_param_combobox)
+            self.ui.scanParameterOuter.currentIndexChanged.connect(self.update_param_combobox)
+            self.update_param_combobox()
+
+        def update_param_combobox(self):
+            old_set_param = self.ui.scanParameterBox.itemData(self.set_param_index)
+
+            sweep_1d = Sweep1DSettings()
+            sweep_1d.set(
+                params=SweepParam(start=self.ui.startEdit.text(), stop=self.ui.endEdit.text(), step=self.ui.stepEdit.text()),
+                step_sec = self.ui.stepsecEdit.text(),
+                save_data = self.ui.saveBox.isChecked(),
+                plot_data = self.ui.livePlotBox.isChecked(),
+                plot_bin = self.ui.plotbinEdit.text(),
+                bidirectional = self.ui.bidirectionalBox.isChecked(),
+                continual = self.ui.continualBox.isChecked()
+            )
+            
+            self.sweep_settings[old_set_param] = sweep_1d.get()
+
+            # Update UI elements and gray out / disable boxes if sweeping time parameter
+            # This only runs on the initial setup, and is not responsible for continuously updating the parameters.
+            for box in [self.ui.scanParameterBox, self.ui.scanParameterInner, self.ui.scanParameterOuter]:
+                match box:
+                    case self.ui.scanParameterBox:
+                        if box.currentIndex() == 0:
+                            for widget in [self.ui.startEdit, self.ui.stepEdit]:
+                                widget.setReadOnly(True)
+                                palette = widget.palette()
+                                palette.setColor(widget.backgroundRole(), Qt.GlobalColor.gray)
+                                widget.setPalette(palette)
+                        else:
+                            for widget in [self.ui.startEdit, self.ui.stepEdit]:
+                                widget.setReadOnly(False)
+                                palette = widget.palette()
+                                palette.setColor(widget.backgroundRole(), Qt.GlobalColor.white)
+                                widget.setPalette(palette)
+                                                                        
+                                self.sweep_settings[self.ui.scanParameterBox.currentData()]
+                                self.set_param_index = box.currentIndex()
+
+                    case self.ui.scanParameterInner:
+                        if box.currentIndex() == 0:
+                            for widget in [self.ui.startInner, self.ui.stepInner]:
+                                widget.setReadOnly(True)
+                                palette = widget.palette()
+                                palette.setColor(widget.backgroundRole(), Qt.GlobalColor.gray)
+                                widget.setPalette(palette)
+                        else:
+                            for widget in [self.ui.startInner, self.ui.stepInner]:
+                                widget.setReadOnly(False)
+                                palette = widget.palette()
+                                palette.setColor(widget.backgroundRole(), Qt.GlobalColor.white)
+                                widget.setPalette(palette)
+                                    
+                                self.update_sweep_box_2D_page(self.sweep_settings[self.ui.scanParameterInner.currentData()], self.sweep_settings[self.ui.scanParameterOuter.currentData()])
+                                self.inner_scan_parameter_index = box.currentIndex()
+
+                    case self.ui.scanParameterOuter:
+                        if box.currentIndex() == 0:
+                            for widget in [self.ui.startOuter, self.ui.stepOuter]:
+                                widget.setReadOnly(True)
+                                palette = widget.palette()
+                                palette.setColor(widget.backgroundRole(), Qt.GlobalColor.gray)
+                                widget.setPalette(palette)
+                        else:
+                            for widget in [self.ui.startOuter, self.ui.stepOuter]:
+                                widget.setReadOnly(False)
+                                palette = widget.palette()
+                                palette.setColor(widget.backgroundRole(), Qt.GlobalColor.white)
+                                widget.setPalette(palette)
+
+                                self.update_sweep_box_2D_page(self.sweep_settings[self.ui.scanParameterInner.currentData()], self.sweep_settings[self.ui.scanParameterOuter.currentData()])
+                                self.outer_scan_parameter_index = box.currentIndex()
+
+
+        def start_logs(self):
+            self.stdout_filename = os.path.join(FILE_PATHS["log_base_dir"], f'stdout-{current_date}.txt')
+            self.stderr_filename = os.path.join(FILE_PATHS["log_base_dir"], f'stderr-{current_date}.txt')
+
+            self.stdout_file = open(self.stdout_filename, 'a')
+            sys.stderr = open(self.stderr_filename, 'a')
+
+            self.stdout_file.write('Started program at  ' + datetime.now().strftime("%H:%M:%S") + '\n')
+            print('Started program at  ' + datetime.now().strftime("%H:%M:%S"), file=sys.stderr)
+            self.stdout_file.close()
+
+            start_all_logging()
+
+        def save_station(self):
+            ss_ui = SaveStationGUI(self)
+            if ss_ui.exec_():
+                fp = ss_ui.get_file()
+                default = ss_ui.ui.defaultBox.isChecked()
+
+                if len(fp) > 0:
+                    self.do_save_station(fp, default)
+
+        def do_save_station(self, filename, set_as_default=False):
+            def add_field(ss, instr, field, value):
+                try:
+                    ss[field] = instr[value]
+                except KeyError:
+                    pass
+
+            if '.station.yaml' not in filename:
+                filename += '.station.yaml'
+
+            snap = {'instruments': {}}
+
+            for name, instr in self.station.snapshot()['instruments'].items():
+                snap['instruments'][name] = {}
+                add_field(snap['instruments'][name], instr, 'type', '__class__')
+                add_field(snap['instruments'][name], instr, 'address', 'address')
+                snap['instruments'][name]['enable_forced_reconnect'] = True
+                if name in self.device_init:
+                    snap['instruments'][name]['init'] = {}
+                    for key, value in self.device_init[name].items():
+                        snap['instruments'][name]['init'][key] = value
+
+                # Could also save parameter information here
+
+            with open(filename, 'w') as file:
+                yaml = YAML()
+                yaml.dump(snap, file)
+                if set_as_default:
+                    qc.config['station']['default_file'] = filename
+                    qc.config.save_config(os.path.join(FILE_PATHS["config_base_dir"], f'qcodesrc.json'))
+
+        def edit_parameters(self):
+            param_ui = EditParameterGUI(self.devices, self.track_params, self.set_params, self)
+            if param_ui.exec_():
+                self.track_params = param_ui.new_track_params
+                self.set_params = param_ui.new_set_params
+                print('Here are the parameters currently being tracked:')
+                for name, p in self.track_params.items():
+                    print(name)
+                print('Here are the parameters available for sweeping:')
+                for name, p in self.set_params.items():
+                    print(name)
+                self.update_parameters()
+
+        def update_parameters(self):
+            # Set up the follow parameter table
+            self.ui.followParamTable.clearContents()
+            self.ui.followParamTable.setRowCount(0)
+            for m, (name, p) in enumerate(self.track_params.items()):
+                self.ui.followParamTable.insertRow(m)
+
+                paramitem = QTableWidgetItem(name)
+                paramitem.setData(32, p)
+                paramitem.setFlags(paramitem.flags() | Qt.ItemIsSelectable)
+                # paramitem.setFlags(Qt.ItemIsSelectable)
+                self.ui.followParamTable.setItem(m, 0, paramitem)
+
+                labelitem = QLineEdit(p.label)
+                labelitem.editingFinished.connect(lambda p=p, labelitem=labelitem:
+                    self.update_labels(p, labelitem.text()))
+                self.ui.followParamTable.setCellWidget(m, 1, labelitem)
+
+                valueitem = QTableWidgetItem(str(self.get_param(p)))
+                self.ui.followParamTable.setItem(m, 2, valueitem)
+
+                includeBox = QCheckBox()
+                includeBox.setChecked(True)
+                self.ui.followParamTable.setCellWidget(m, 3, includeBox)
+
+                updateButton = QPushButton("Get")
+                updateButton.clicked.connect(lambda checked, m=m, p=p, valueitem=valueitem:
+                    valueitem.setText(str(self.get_param(p))))
+                self.ui.followParamTable.setCellWidget(m, 4, updateButton)
+
+            # Set up the output parameter table
+            self.ui.outputParamTable.clearContents()
+            self.ui.outputParamTable.setRowCount(0)
+            self.ui.scanParameterBox.clear()
+            self.ui.scanParameterBox.addItem('time', 'time')
+            for n, (name, p) in enumerate(self.set_params.items()):
+                self.ui.outputParamTable.insertRow(n)
+
+                paramitem = QTableWidgetItem(name)
+                paramitem.setData(32, p)
+                paramitem.setFlags(Qt.ItemIsSelectable)
+                self.ui.outputParamTable.setItem(n, 0, paramitem)
+
+                labelitem = QLineEdit(p.label)
+                labelitem.editingFinished.connect(lambda p=p, labelitem=labelitem:
+                    self.update_labels(p, labelitem.text()))
+                self.ui.outputParamTable.setCellWidget(n, 1, labelitem)
+
+                valueitem = QLineEdit(str(self.get_param(p)))
+                self.ui.outputParamTable.setCellWidget(n, 2, valueitem)
+
+                setButton = QPushButton("Set")
+                setButton.clicked.connect(lambda checked, p=p, valueitem=valueitem:
+                    self.set_param(p, valueitem))
+                self.ui.outputParamTable.setCellWidget(n, 3, setButton)
+
+                getButton = QPushButton("Get")
+                getButton.clicked.connect(lambda checked, p=p, valueitem=valueitem:
+                    valueitem.setText(str(self.get_param(p))))
+                self.ui.outputParamTable.setCellWidget(n, 4, getButton)
+
+                self.ui.scanParameterBox.addItem(p.label, p)
+                self.ui.scanParameterInner.addItem(p.label, p)
+                self.ui.scanParameterOuter.addItem(p.label, p)
+
+                if p not in list(self.sweep_settings.keys()):
+                    self.sweep_settings[p] = {'start': '', 'stop': '', 'step': '', 'step_sec': '', 'continual': False,
+                                              'bidirectional': False, 'plot_bin': 1, 'save_data': True, 'plot_data': True,
+                                              'ramp_to_start': True}
+
+        def set_param(self, p, valueitem):
+            try:
+                if "Int" in repr(p.vals) or "Number" in repr(p.vals):
+                    safe_set(p, _value_parser(valueitem.text()))
+                elif "String" in repr(p.vals):
+                    safe_set(p, str(valueitem.text()))
+                elif "Bool" in repr(p.vals) or 'False' in repr(p.vals):
+                    value = valueitem.text()
+                    if value == "false" or value == "False" or value == "0":
+                        safe_set(p, False)
+                    elif value == "true" or value == "True" or value == "1":
+                        safe_set(p, True)
+                    else:
+                        safe_set(p, value)
                 else:
-                    start = _value_parser(self.ui.startEdit.text())
-                    stop = _value_parser(self.ui.endEdit.text())
-                    step = _value_parser(self.ui.stepEdit.text())
-                    stepsec = _value_parser(self.ui.stepsecEdit.text())
-                    plotbin = self.ui.plotbinEdit.text()
-                    plotbin = int(plotbin)
-                    if plotbin < 1:
-                        self.ui.plotbinEdit.setText('1')
-                        raise ValueError
-
-                    set_param = self.ui.scanParameterBox.currentData()
-                    twoway = self.ui.bidirectionalBox.isChecked()
-                    continuous = self.ui.continualBox.isChecked()
-                    save = self.ui.saveBox.isChecked()
-                    plot = self.ui.livePlotBox.isChecked()
-
-                    sweep = Sweep1D(set_param, start, stop, step, inter_delay=1.0 / stepsec,
-                                    bidirectional=twoway, continual=continuous, save_data=save,
-                                    plot_data=plot, x_axis_time=0, plot_bin=plotbin)
-
-                for n in range(self.ui.followParamTable.rowCount()):
-                    if self.ui.followParamTable.cellWidget(n, 3).isChecked():
-                        param = self.ui.followParamTable.item(n, 0).data(32)
-                        if param is not sweep.set_param:
-                            sweep.follow_param(param)
-
-                sweep.update_signal.connect(self.receive_updates_sweeps)
-                sweep.dataset_signal.connect(self.receive_dataset)
-
-                if isinstance(sweep, Sweep0D) and len(sweep._params) == 0 and sweep.plot_data:
-                    self.show_error("Error", "Can't plot time against nothing. Either select some parameters to follow or "
-                        "unselect \'plot data\'.")
-                    sweep = None
-
-                return sweep 
-
-            # Corresponds to the 2D Sweep tab
-            case 1:
-                if self.ui.scanParameterInner.currentText() == 'time' or self.ui.scanParameterOuter.currentText() == 'time':
-                    self.show_error("Error", "Can't sweep time for dual gate measurements. Select something else to sweep.")
-                    return
+                    safe_set(p, valueitem.text())
+            except ParameterException:
+                self.show_error('Error', f'Could not set {p.label} to {valueitem.text()}. Check the command and try '
+                    'again.')
 
                 # [param, start, stop, step] 
                 in_params = [_value_parser(self.ui.scanParameterInner.currentData()), _value_parser(self.ui.startInner.text()), _value_parser(self.ui.endInner.text()), _value_parser(self.ui.stepInner.text())]
@@ -839,6 +1140,79 @@ class UImain(QtWidgets.QMainWindow):
             except Exception as e:
                 self.show_error('Error', "Could not load the sweep.", e)
 
+    def update_sweep_box(self, settings):
+        self.ui.startEdit.setText(str(settings.params.start))
+        self.ui.endEdit.setText(str(settings.params.stop))
+        self.ui.stepEdit.setText(str(settings.params.step))
+        self.ui.stepsecEdit.setText(str(settings.step_sec))
+        self.ui.saveBox.setChecked(settings.save_data)
+        self.ui.livePlotBox.setChecked(settings.plot_data)
+        self.ui.plotbinEdit.setText(str(settings.plot_bin))
+        self.ui.bidirectionalBox.setChecked(settings.bidirectional)
+        self.ui.continualBox.setChecked(settings.continual)
+
+    def update_sweep_box_2D_page(self, settings_inner, settings_outer):
+        '''
+        Convenience function for setting "2D sweep" parameters
+        '''
+        self.ui.startInner.setText(str(settings_inner['start']))
+        self.ui.endInner.setText(str(settings_inner['stop']))
+        self.ui.stepInner.setText(str(settings_inner['step']))
+        self.ui.stepsecInner.setText(str(settings_inner['step_sec']))
+        self.ui.startOuter.setText(str(settings_outer['start']))
+        self.ui.endOuter.setText(str(settings_outer['stop']))
+        self.ui.stepOuter.setText(str(settings_outer['step']))
+        self.ui.stepsecOuter.setText(str(settings_outer['step_sec']))
+
+    def save_sequence(self):
+        (filename, x) = QFileDialog.getSaveFileName(self, "Save Sequence as JSON",
+                                                    os.path.join(FILE_PATHS["experiment_base_dir"], f"untitled.json"),
+                                                    "JSON (*.txt *.json)")
+
+        if len(filename) > 0:
+            self.sweep_queue.export_json(filename)
+
+    def load_sequence(self):
+        (filename, x) = QFileDialog.getOpenFileName(self, "Load Sequence from JSON",
+                                                    FILE_PATHS["experiment_base_dir"],
+                                                    "JSON (*.txt *.json)")
+
+        if len(filename) > 0:
+            try:
+                new_queue = SweepQueue.init_from_json(filename, self.station)
+                self.sweep_queue = new_queue
+                self.update_sequence_table()
+                for sweep in self.sweep_queue.queue:
+                    sweep.dataset_signal.connect(self.receive_dataset)
+                    sweep.update_signal.connect(self.receive_updates)
+            except Exception as e:
+                self.show_error('Error', "Could not load the sequence.", e)
+    def add_device(self):
+        # TODO:
+        #   Add in ability to pass args and kwargs to the constructor
+
+        instrument_ui = AddInstrumentGUI(self)
+        if instrument_ui.exec_():
+            d = instrument_ui.get_selected()
+            try:
+                d['name'] = _name_parser(d['name'])
+            except ValueError as e:
+                self.show_error("Error", "Instrument name must start with a letter.", e)
+                return
+
+            if instrument_ui.ui.nameEdit.text() in self.devices.keys():
+                self.show_error("Error", "Already have an instrument with that name in the station.")
+                return
+
+            # Now, set up our initialization for each device, if it doesn't follow the standard initialization
+            new_dev = self.connect_device(d['device'], d['class'], d['name'], d['address'], d['args'], d['kwargs'])
+
+            if new_dev is not None:
+                self.devices[d['name']] = new_dev
+                self.station.add_component(new_dev, update_snapshot=False)
+                self.update_instrument_menu()
+
+                # self.update_()    
     def update_sweep_box(self, settings):
         self.ui.startEdit.setText(str(settings.params.start))
         self.ui.endEdit.setText(str(settings.params.stop))
