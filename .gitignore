@@ -5,7 +5,8 @@ Experiments/
 Origin Files/
 cfg/
 logs/
-utils/__pycache__
+__pycache__/
+utils/__pycache__/
 resources/ui/__pycache__/
 .DS_Store
 .ipynb_checkpoints
