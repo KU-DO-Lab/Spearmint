@@ -952,10 +952,22 @@ class UImain(QtWidgets.QMainWindow):
         self.ui.menuInstruments.addAction(self.ui.removeInstrumentAction)
         self.ui.menuInstruments.addSeparator()
 
+        self.ui.temperatureComboBox.clear()
 
         for name, dev in self.devices.items():
             act = self.ui.menuInstruments.addAction(f"{dev.name} ({dev.__class__.__name__})")
             act.setData(dev)
+            if dev.__class__.__name__ == "LakeshoreModel336":
+                self.ui.temperatureComboBox_1.addItem(dev.name)
+
+                # may need a custom class implementation to flush old data after a max time instead of ending the sweep
+                sweep = BaseSweep(inter_delay=0.1, save_data = False, plot_data=False)
+                sweep.update_signal.connect(self.receive_updates_temperature)
+
+            # # also try and automatically initialize a TM620 in slot 2
+            # elif dev.__class__.__name__ == ""
+            #     self.ui.temperatureComboBox_2.addItem(dev.name) 
+
 
     def remove_device(self):
         remove_ui = RemoveInstrumentGUI(self.devices, self)
@@ -986,8 +998,6 @@ class UImain(QtWidgets.QMainWindow):
     @pyqtSlot(dict)
     def receive_updates_sweeps(self, update_dict):
 
-        print("test")
-        
         is_running = update_dict['status']
         set_param = update_dict['set_param']
         setpoint = update_dict['setpoint']
@@ -1010,6 +1020,36 @@ class UImain(QtWidgets.QMainWindow):
             self.ui.directionValue.setText('Backward')
         else:
             self.ui.directionValue.setText('Forward')
+
+    
+    @pyqtSlot(dict)
+    def receive_updates_temperature(self, update_dict):
+
+        for name, p in self.track_params.items():
+            print(name)
+
+        is_running = update_dict['status']
+        channel_A = update_dict['channel_A']
+        channel_B = update_dict['channel_B']
+        setpoint = update_dict['channel_B']
+
+        self.ui.scanValue.setText(f'{is_running}')
+        if is_running:
+            self.ui.temperatureStatus_1.setStyleSheet('color: green')
+            self.ui.pauseButton.setText('Pause')
+        # else:
+        #     self.ui.scanValue.setStyleSheet('color: red')
+        #     self.ui.pauseButton.setText('Resume')
+        # if set_param == 'time':
+        #     self.ui.paramValue.setText('time')
+        # else:
+        #     self.ui.paramValue.setText(f'{set_param.label}')
+        # if setpoint is not None:
+        #     self.ui.setpointValue.setText(f'{str(setpoint)}')
+        # if direction:
+        #     self.ui.directionValue.setText('Backward')
+        # else:
+        #     self.ui.directionValue.setText('Forward')
 
     def on_sweep_completed(self):
         directory = FILE_PATHS['origin_base_dir']

@@ -8,15 +8,12 @@ from qcodes.instrument_drivers.Lakeshore import LakeshoreModel336
 from Drivers.M4G import M4G
 # To add an instrument, import the driver then add it to our instrument
 # dictionary with the name as the key, and the class as the value
-import pyvisa
-
-
 LOCAL_INSTRUMENTS = {'NI DAQ': Daq,
                      'Model_372': Model_372,
                      'AMI430': AMI430,
                      'SR860': SR860,
                      'SR830': SR830,
                      'Keithley2450': Keithley2450,
-                     'Lakeshore336': LakeshoreModel336,
                      'Model 4G': M4G,
-                     }
+                     'Lakeshore336': LakeshoreModel336
+                    }
