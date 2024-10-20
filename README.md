@@ -13,7 +13,7 @@ All plans and details about the development of the application can be found in I
 - [ ] Implement Dual Gate measurements to the GUI
     - [x] Migrate the central pane of the main UI to a "tabbed" setup. Each measurement/instrument category is assigned its own tab. Sequential and simultaneous control will be handled with the sweep queue.
     - [x] GUI fields for 2D  sweep (dual gate) measurements.
-    - [ ] Implement necessary functions for "controls" pane of 2D sweep
+    - [x] Implement necessary functions for "controls" pane of 2D sweep
     - [ ] Implement the ability to send the 2D sweep to the sweep queue.
 - [ ] Implement Lakeshore 336
     - [x] Driver loads and can connect to instument
